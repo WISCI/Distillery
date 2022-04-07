@@ -2,6 +2,13 @@ import numpy as np
 import json
 import pyodbc
 
+#To do list:
+# Support plotting
+# Support Flask + Plotly for dynamic website
+# Implement SQL database interaction (creation, read, write)
+# Implement sanity checks on files (both info and lnk present in directory)
+# Implement sanity checks on database (is a species with same name already in there)
+
 def ReadData(species=None):
 #function to read in a formatted text file for a single species
     
