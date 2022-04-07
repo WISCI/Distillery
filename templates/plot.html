@@ -1,0 +1,37 @@
+<!doctype html>
+<title>check out my plot</title>
+<section>
+  <h2>Random plot generated with flask</h2>
+  </section>
+<form method=post action="">
+<table>
+ {% for field in form %}
+  <tr>
+  <td>{{ field.name }}</td><td>{{ field }}</td>
+  <td>{{ field.label }}</td>
+  </tr>
+ {% endfor %} 
+</table>
+<p><input type=submit value=Submit></form></p>
+{% if form.A.errors %}
+            <ul class="errors">
+                {% for error in form.A.errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+{% if form.n.errors %}
+            <ul class="errors">
+                {% for error in form.n.errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+        
+        
+{% if plot_url != None %}
+<img src="data:image/png;base64, {{ plot_url }}" alt="awesome plot right?">
+{% endif %}
+  
+
+
