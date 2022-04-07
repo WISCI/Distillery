@@ -8,6 +8,7 @@ import pyodbc
 # Implement SQL database interaction (creation, read, write)
 # Implement sanity checks on files (both info and lnk present in directory)
 # Implement sanity checks on database (is a species with same name already in there)
+# Implement calculation of optical constants/Qabs/dielectric functions from given values
 
 def ReadData(species=None):
 #function to read in a formatted text file for a single species
@@ -76,6 +77,22 @@ def WriteSQL(dbname):
 #function to add an entry to a database for a single species
     print("Not yet implemented")
 
-def MergeSpecies(species1,species2):
-#function to merge optical constants from two (or more) species
+def MixSpecies(species1,species2,ratio=0.5):
+#function to mix optical constants from two (or more) species with a given ratio
+    print("Not yet implemented")
+
+def ConvertWavenumber(wavenumber):
+#function to convert wavenumber cm^-1 into wavelength um
+
+    wavelength = 1e-4 / wavenumber
+
+    return wavelength
+
+def ConvertOC(input=None,conversion='nk2bs'):
+#function to convert input to/from n,k into something else
+
+#Assuming mu = 1 (true for non-magnetic materials at optical wavelengths)
+#dielectric: e_real = n**2 - k**2
+#            e_imag = 2*n*k
+#            e_real + i e_imag = (n + i k)**2
     print("Not yet implemented")
