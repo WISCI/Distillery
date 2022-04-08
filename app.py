@@ -38,7 +38,7 @@ def plot():
             print(form.ylog.data)
             if form.ylog.data == True:
                 plt.yscale("log")
-            plt.savefig(img, format='png')
+            plt.savefig(img, format='svg')
             plt.close()
             img.seek(0)
             plot_url = base64.b64encode(img.getvalue()).decode('utf8')
