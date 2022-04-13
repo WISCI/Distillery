@@ -1,5 +1,5 @@
 from flask import render_template, Flask,send_file,request,Response,url_for,send_from_directory
-from wtforms import Form, FloatField, validators,BooleanField,SelectField
+from wtforms import Form, FloatField, validators,BooleanField,SelectField,SelectMultipleField
 import io
 import base64
 import numpy as np
@@ -25,7 +25,9 @@ class InputForm(Form):
     n = FloatField(label="Power", default=2.0,validators=[validators.NumberRange(min=1,max=10,message="n outside of bounds 1<=n<=10")])
     ylog= BooleanField(label="Log Y-axis",default="")
     optc=SelectField("Species",choices=listopt)
-    #options=SelectField("Unused list (used for title)",choices=listopt)
+    options_sil=SelectMultipleField("Select Silicates (unused)",choices=listopt)
+    options_car=SelectMultipleField("Select Carbons (unused)",choices=listopt)
+    options_ice=SelectMultipleField("Select Ices (unused)",choices=listopt)
     savedata= BooleanField(label="Make raw data available for download",default=True)
 
 app = Flask(__name__)
