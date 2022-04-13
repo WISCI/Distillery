@@ -28,7 +28,7 @@ class InputForm(Form):
     options_sil=SelectMultipleField("Select Silicates (unused)",choices=listopt)
     options_car=SelectMultipleField("Select Carbons (unused)",choices=listopt)
     options_ice=SelectMultipleField("Select Ices (unused)",choices=listopt)
-    savedata= BooleanField(label="Make raw data available for download",default=True)
+    savedata= BooleanField(label="Make raw data available for download",render_kw={'checked': True})
 
 app = Flask(__name__)
 
@@ -63,6 +63,7 @@ def plot():
     if True:
     #try:
         form=InputForm(request.form)
+        
         if request.method == 'POST' and form.validate():
             optcons=glob.glob("./static/opticalconstants/*")
             optcons.sort()
