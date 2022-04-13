@@ -7,12 +7,14 @@
 <table>
  {% for field in form %}
   <tr>
-  <td>{{ field.name }}</td><td>{{ field }}</td>
+  <td>{{ field }}</td>
   <td>{{ field.label }}</td>
   </tr>
  {% endfor %} 
 </table>
 <p><input type=submit value=Submit></form></p>
+
+
 {% if form.A.errors %}
             <ul class="errors">
                 {% for error in form.A.errors %}
@@ -29,9 +31,20 @@
         {% endif %}
         
         
+
+{% if filename != None %}
+
+
+<form action={{ url_for('download_file',name=filename) }}>
+    <input type="submit" value="Download raw data" />
+</form>
+
+{% endif %}
+
 {% if plot_url != None %}
 <img src="data:image/svg+xml;base64, {{ plot_url }}" alt="awesome plot right?">
 {% endif %}
+
   
 
 
