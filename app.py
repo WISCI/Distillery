@@ -115,5 +115,111 @@ def plot():
                                     filename=filename)
 #except:
      #   return render_template('err.html')
+
+@app.route('/extrapolate',methods=['GET','POST'])
+def extrapolate():
+    if True:
+    #try:
+        form=InputForm(request.form)
+        if request.method == 'POST' and form.validate():
+            optcons=glob.glob("./static/opticalconstants/*")
+            optcons.sort()
+            #print("form data?",np.int32(form.optc.data))
+            #print(optcons[np.int32(form.optc.data)])
+            #arr1,arr2,arr3=np.loadtxt(optcons[np.int32(form.optc.data)],unpack=1)
+            
+            with open(optcons[np.int32(form.optc.data)]) as datafile:
+                data  = json.load(datafile)
+
+
+            # magic data reduction and calculations take place here
+
+            img = io.BytesIO()
     
+            x = np.arange(10)
+            plt.title("somebodys_plot "+str(datetime.date.today())+" "+optcons[np.int32(form.optc.data)].split("/")[-1].split(".")[0])
+            plt.plot(data['wavelength'],data['n'],"-k",label="$n$")
+            plt.plot(data['wavelength'],data['k'],"-r",label="$k$")
+            plt.xlabel(r"Wavelength ($\mu$m)")
+            plt.ylabel(r"Refractive indices $n$,$k$")
+            #print(form.ylog.data)
+            if form.ylog.data == True:
+                plt.yscale("log")
+            plt.xscale("log")
+            plt.legend()
+            plt.savefig(img, format='svg')
+            plt.close()
+            img.seek(0)
+            plot_url = base64.b64encode(img.getvalue()).decode('utf8')
+
+            if form.savedata.data == True:
+                file_uuid = str(uuid.uuid4())
+                filename="distillery_"+file_uuid+".csv"
+                np.savetxt("./static/client/"+filename,np.c_[data['wavelength'],data['n'],data['k']])
+            else:
+                filename=None
+            return render_template('extrapolate.html', plot_url=plot_url,form=form,
+                                    values=data,
+                                    filename=filename)
+        else:
+            plot_url=None
+            filename=None
+            data=None
+            return render_template('extrapolate.html', plot_url=plot_url,form=form,
+                                    values=data,
+                                    filename=filename)
+
+@app.route('/mixing',methods=['GET','POST'])
+def mixing():
+    if True:
+    #try:
+        form=InputForm(request.form)
+        if request.method == 'POST' and form.validate():
+            optcons=glob.glob("./static/opticalconstants/*")
+            optcons.sort()
+            #print("form data?",np.int32(form.optc.data))
+            #print(optcons[np.int32(form.optc.data)])
+            #arr1,arr2,arr3=np.loadtxt(optcons[np.int32(form.optc.data)],unpack=1)
+            
+            with open(optcons[np.int32(form.optc.data)]) as datafile:
+                data  = json.load(datafile)
+
+
+            # magic data reduction and calculations take place here
+
+            img = io.BytesIO()
+    
+            x = np.arange(10)
+            plt.title("somebodys_plot "+str(datetime.date.today())+" "+optcons[np.int32(form.optc.data)].split("/")[-1].split(".")[0])
+            plt.plot(data['wavelength'],data['n'],"-k",label="$n$")
+            plt.plot(data['wavelength'],data['k'],"-r",label="$k$")
+            plt.xlabel(r"Wavelength ($\mu$m)")
+            plt.ylabel(r"Refractive indices $n$,$k$")
+            #print(form.ylog.data)
+            if form.ylog.data == True:
+                plt.yscale("log")
+            plt.xscale("log")
+            plt.legend()
+            plt.savefig(img, format='svg')
+            plt.close()
+            img.seek(0)
+            plot_url = base64.b64encode(img.getvalue()).decode('utf8')
+
+            if form.savedata.data == True:
+                file_uuid = str(uuid.uuid4())
+                filename="distillery_"+file_uuid+".csv"
+                np.savetxt("./static/client/"+filename,np.c_[data['wavelength'],data['n'],data['k']])
+            else:
+                filename=None
+            return render_template('mixing.html', plot_url=plot_url,form=form,
+                                    values=data,
+                                    filename=filename)
+        else:
+            plot_url=None
+            filename=None
+            data=None
+            return render_template('mixing.html', plot_url=plot_url,form=form,
+                                    values=data,
+                                    filename=filename)
+
 app.run(debug=True)
