@@ -66,19 +66,23 @@ def plot():
     if True:
     #try:
         form=InputForm(request.form)
-        
         if request.method == 'POST' and form.validate():
             optcons=glob.glob("./static/opticalconstants/*")
             optcons.sort()
             print("form data?",np.int32(form.optc.data))
             print(optcons[np.int32(form.optc.data)])
             #arr1,arr2,arr3=np.loadtxt(optcons[np.int32(form.optc.data)],unpack=1)
+            
             with open(optcons[np.int32(form.optc.data)]) as datafile:
-                data = json.load(datafile)
-            print(data['species'],data['formula'])
+                data  = json.load(datafile)
+            
+            values = []
+            values.append(data['species'])
+            values.append(data['formula'])
+            values.append(data['temperature'])
+            values.append(data['density'])
 
             # magic data reduction and calculations take place here
-
 
             img = io.BytesIO()
     
@@ -104,11 +108,12 @@ def plot():
                 np.savetxt("./static/client/"+filename,np.c_[data['wavelength'],data['n'],data['k']])
             else:
                 filename=None
-            return render_template('plot.html', plot_url=plot_url,form=form,filename=filename)
+            return render_template('plot.html', plot_url=plot_url,form=form,values=values,filename=filename)
         else:
             plot_url=None
             filename=None
-            return render_template('plot.html', plot_url=plot_url,form=form,filename=filename)
+            values=None
+            return render_template('plot.html', plot_url=plot_url,form=form,values=values,filename=filename)
     #except:
      #   return render_template('err.html')
     

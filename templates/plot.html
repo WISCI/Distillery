@@ -1,7 +1,7 @@
 <!doctype html>
 <title>WISCI Distillery</title>
 <section>
-  <h2>Plotting Optical Constants</h2>
+  <h2>Input</h2>
   </section>
 <form method=post action="">
 <table>
@@ -23,10 +23,20 @@
 
 {% endif %}
 
-{% if plot_url != None %}
-<img src="data:image/svg+xml;base64, {{ plot_url }}" alt="awesome plot right?">
-{% endif %}
 
-  
+<section>
+  <h2>Output</h2>
+{% if plot_url != None %}
+<img src="data:image/svg+xml;base64, {{ plot_url }}" alt="Plot of wavelength vs. optical constants n,k">
+<table>
+ {% for value in values %}
+  <tr>
+  <td>{{ value }}</td>
+  </tr>
+ {% endfor %} 
+</table>
+{% endif %}
+  </section>
+
 
 
