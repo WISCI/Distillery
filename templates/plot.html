@@ -28,13 +28,18 @@
   <h2>Output</h2>
 {% if plot_url != None %}
 <img src="data:image/svg+xml;base64, {{ plot_url }}" alt="Plot of wavelength vs. optical constants n,k">
+
 <table>
- {% for value in values %}
+ {% for key, value in values.items() %}
   <tr>
-  <td>{{ value }}</td>
-  </tr>
+  {% if key != "n" and key != "k" and key != "wavelength" %}
+    <td>{{ key }}</td>
+    <td>{{ value }}</td>
+  {% endif%}
  {% endfor %} 
+  </tr>
 </table>
+
 {% endif %}
   </section>
 

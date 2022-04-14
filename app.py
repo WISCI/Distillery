@@ -69,18 +69,13 @@ def plot():
         if request.method == 'POST' and form.validate():
             optcons=glob.glob("./static/opticalconstants/*")
             optcons.sort()
-            print("form data?",np.int32(form.optc.data))
-            print(optcons[np.int32(form.optc.data)])
+            #print("form data?",np.int32(form.optc.data))
+            #print(optcons[np.int32(form.optc.data)])
             #arr1,arr2,arr3=np.loadtxt(optcons[np.int32(form.optc.data)],unpack=1)
             
             with open(optcons[np.int32(form.optc.data)]) as datafile:
                 data  = json.load(datafile)
-            
-            values = []
-            values.append(data['species'])
-            values.append(data['formula'])
-            values.append(data['temperature'])
-            values.append(data['density'])
+
 
             # magic data reduction and calculations take place here
 
@@ -92,7 +87,7 @@ def plot():
             plt.plot(data['wavelength'],data['k'],"-r",label="$k$")
             plt.xlabel(r"Wavelength ($\mu$m)")
             plt.ylabel(r"Refractive indices $n$,$k$")
-            print(form.ylog.data)
+            #print(form.ylog.data)
             if form.ylog.data == True:
                 plt.yscale("log")
             plt.xscale("log")
@@ -108,13 +103,17 @@ def plot():
                 np.savetxt("./static/client/"+filename,np.c_[data['wavelength'],data['n'],data['k']])
             else:
                 filename=None
-            return render_template('plot.html', plot_url=plot_url,form=form,values=values,filename=filename)
+            return render_template('plot.html', plot_url=plot_url,form=form,
+                                    values=data,
+                                    filename=filename)
         else:
             plot_url=None
             filename=None
-            values=None
-            return render_template('plot.html', plot_url=plot_url,form=form,values=values,filename=filename)
-    #except:
+            data=None
+            return render_template('plot.html', plot_url=plot_url,form=form,
+                                    values=data,
+                                    filename=filename)
+#except:
      #   return render_template('err.html')
     
 app.run(debug=True)
