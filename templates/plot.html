@@ -34,8 +34,14 @@
   <tr>
   {% if key != "n" and key != "k" and key != "wavelength" %}
     <td>{{ key }}</td>
-    <td>{{ value }}</td>
-  {% endif%}
+    {% if key == 'temperature' %}
+        <td> {{ value }} K <td> 
+    {% elif key == 'density' %}
+        <td> {{ value }} gcm^-3 <td> 
+    {% else %}
+        <td>{{ value }}</td>
+    {% endif %}
+  {% endif %}
  {% endfor %} 
   </tr>
 </table>
