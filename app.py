@@ -14,6 +14,9 @@ import os
 #@app.route("/myplot", methods=["GET"])
 matplotlib.use('Agg')
 
+#
+# Here we define the input forms for each page on the site
+#
 class PlotForm(Form):
     optcons=glob.glob("./static/opticalconstants/*")
     optcons.sort()
@@ -66,6 +69,29 @@ class MixingForm(Form):
     ylog= BooleanField(label="Log Y-axis",default="")
 
 
+#
+# Here we define the functions that manipulate the optical constants
+#
+def kramers_kronig(data_array):
+
+    for i in range(0,len(data_array)):
+
+        data = data_array[i]
+
+        if i == 0:
+            kk_l = np.asarray(data['wavelength'])
+            kk_n = np.asarray(data['n'])
+            kk_k = np.asarray(data['k'])
+        else:
+            kk_n = 1/len(data_array)*(kk_n - data['n'])
+            kk_k = 1/len(data_array)*(kk_k - data['k'])
+
+    return kk_l,kk_n,kk_k
+
+
+#
+# Here we start the app!
+#
 
 app = Flask(__name__)
 
@@ -89,7 +115,9 @@ import base64
     #response.headers.set("Content-Disposition","attachment",filename="{0}.csv".format(file_name))
     #return response
 
-
+#
+# Here we define the machinery of each page on the site
+#
 
 @app.route("/get-data/<path:name>")
 def download_file(name):
@@ -229,14 +257,17 @@ def mixing():
                     data_array.append(json.load(datafile))
 
             if form.frac3.data != 0.0: 
-                with open(optcons[np.int32(form.optc2.data)]) as datafile:
+                with open(optcons[np.int32(form.optc3.data)]) as datafile:
                     data_array.append(json.load(datafile))
 
+            fracs = [form.frac1.data,form.frac2.data,form.frac3.data]
             nspecies = len(data_array)
             # magic data reduction and calculations take place here
             plot_urls=[]
+            density = 0.0
             for i in range(0,nspecies):
                 data = data_array[i]
+                density += data['density']*fracs[i]
 
                 img = io.BytesIO()
     
@@ -257,17 +288,57 @@ def mixing():
 
                 plot_urls.append(base64.b64encode(img.getvalue()).decode('utf8'))
 
-            filename=None
+            out_l,out_n,out_k = kramers_kronig(data_array)
+
+            #create dictionary object for mixture species
+            mixture = {'species' : 'mixture',
+                       'formula' : 'N/A',
+                       'wavelength' : out_l,
+                       'n' : out_n,
+                       'k' : out_k, 
+                       'density' : str(density),
+                       'temperature' : 'N/A',
+                       'stype' : 'N/A',
+                       'origin' : 'CALCULATION',
+                       'citation' : 'WISCI Distillery' }
+
+            #plot for mixture
+            img = io.BytesIO()
+
+            x = np.arange(10)
+            plt.title("somebodys_plot "+str(datetime.date.today())+" "+optcons[np.int32(form.optc1.data)].split("/")[-1].split(".")[0])
+            plt.plot(data['wavelength'],data['n'],"-k",label="$n$")
+            plt.plot(data['wavelength'],data['k'],"-r",label="$k$")
+            plt.xlabel(r"Wavelength ($\mu$m)")
+            plt.ylabel(r"Refractive indices $n$,$k$")
+            #print(form.ylog.data)
+            if form.ylog.data == True:
+                plt.yscale("log")
+            plt.xscale("log")
+            plt.legend()
+            plt.savefig(img, format='svg')
+            plt.close()
+            img.seek(0)
+            plot_urlm = base64.b64encode(img.getvalue()).decode('utf8')
+
+            if form.savedata.data == True:
+                file_uuid = str(uuid.uuid4())
+                filename="distillery_"+file_uuid+".csv"
+                np.savetxt("./static/client/"+filename,np.c_[data['wavelength'],data['n'],data['k']])
+            else: 
+                filename=None
             return render_template('mixing.html', plot_urls=plot_urls,form=form,
-                                    values=data_array,
+                                    values=data_array,mixture=mixture,plot_urlm=plot_urlm,
                                     filename=filename)
 
         else:
             plot_urls=None
             filename=None
             data_array=None
+            mixture=None
+            plot_urlm=None
             return render_template('mixing.html', plot_urls=plot_urls,form=form,
-                                    values=data_array,
+                                    values=data_array,mixture=mixture,plot_urlm=plot_urlm,
                                     filename=filename)
 
 app.run(debug=True)

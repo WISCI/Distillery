@@ -38,8 +38,7 @@
 
 <h2>Material properties:</h2>
 <table>
-{% for value in values %}
-  {% for key, val in value.items() %}
+  {% for key, val in mixture.items() %}
   <tr>
   {% if key != "n" and key != "k" and key != "wavelength" %}
     <td>{{ key }}</td>
@@ -52,7 +51,6 @@
     {% endif %}
   {% endif %}
  {% endfor %} 
-{% endfor %}
   </tr>
 </table>
 
