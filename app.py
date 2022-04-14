@@ -9,6 +9,8 @@ import matplotlib
 import uuid
 import matplotlib.pyplot as plt
 import glob
+import json
+import os
 #@app.route("/myplot", methods=["GET"])
 matplotlib.use('Agg')
 
@@ -20,15 +22,16 @@ class InputForm(Form):
     for i_optcon,optcon in enumerate(optcons):
         listopt.append((i_optcon,optcon.split("/")[-1].split(".")[0]))
     print(listopt)
-    A = FloatField(label="Amplitude", default=1.0,validators=[validators.NumberRange(min=1,max=10,message="A outside of bounds 1<=A<=10")])
-    b = FloatField(label="Offset", default=1.0,validators=[validators.NumberRange()])
-    n = FloatField(label="Power", default=2.0,validators=[validators.NumberRange(min=1,max=10,message="n outside of bounds 1<=n<=10")])
-    ylog= BooleanField(label="Log Y-axis",default="")
+    #A = FloatField(label="Amplitude", default=1.0,validators=[validators.NumberRange(min=1,max=10,message="A outside of bounds 1<=A<=10")])
+    #b = FloatField(label="Offset", default=1.0,validators=[validators.NumberRange()])
+    #n = FloatField(label="Power", default=2.0,validators=[validators.NumberRange(min=1,max=10,message="n outside of bounds 1<=n<=10")])
+    
     optc=SelectField("Species",choices=listopt)
     options_sil=SelectMultipleField("Select Silicates (unused)",choices=listopt)
     options_car=SelectMultipleField("Select Carbons (unused)",choices=listopt)
     options_ice=SelectMultipleField("Select Ices (unused)",choices=listopt)
-    savedata= BooleanField(label="Make raw data available for download",render_kw={'checked': True})
+    savedata= BooleanField(label="Make raw data available for download",render_kw={'checked': False})
+    ylog= BooleanField(label="Log Y-axis",default="")
 
 app = Flask(__name__)
 
@@ -68,17 +71,23 @@ def plot():
             optcons=glob.glob("./static/opticalconstants/*")
             optcons.sort()
             print("form data?",np.int32(form.optc.data))
-            arr1,arr2,arr3=np.loadtxt(optcons[np.int32(form.optc.data)],unpack=1)
+            print(optcons[np.int32(form.optc.data)])
+            #arr1,arr2,arr3=np.loadtxt(optcons[np.int32(form.optc.data)],unpack=1)
+            with open(optcons[np.int32(form.optc.data)]) as datafile:
+                data = json.load(datafile)
+            print(data['species'],data['formula'])
+
             # magic data reduction and calculations take place here
-            
+
+
             img = io.BytesIO()
     
             x = np.arange(10)
             plt.title("somebodys_plot "+str(datetime.date.today())+" "+optcons[np.int32(form.optc.data)].split("/")[-1].split(".")[0])
-            plt.plot(arr1,arr2,"-",label="$n$")
-            plt.plot(arr1,arr3,"-",label="$k$")
-            plt.xlabel("Wavelength (um)")
-            plt.ylabel("refractive index $n/k$")
+            plt.plot(data['wavelength'],data['n'],"-k",label="$n$")
+            plt.plot(data['wavelength'],data['k'],"-r",label="$k$")
+            plt.xlabel(r"Wavelength ($\mu$m)")
+            plt.ylabel(r"Refractive indices $n$,$k$")
             print(form.ylog.data)
             if form.ylog.data == True:
                 plt.yscale("log")
@@ -92,7 +101,7 @@ def plot():
             if form.savedata.data == True:
                 file_uuid = str(uuid.uuid4())
                 filename="distillery_"+file_uuid+".csv"
-                np.savetxt("./static/client/"+filename,np.c_[arr1,arr2,arr3])
+                np.savetxt("./static/client/"+filename,np.c_[data['wavelength'],data['n'],data['k']])
             else:
                 filename=None
             return render_template('plot.html', plot_url=plot_url,form=form,filename=filename)

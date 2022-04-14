@@ -1,7 +1,7 @@
 <!doctype html>
-<title>check out my plot</title>
+<title>WISCI Distillery</title>
 <section>
-  <h2>Random plot generated with flask</h2>
+  <h2>Plotting Optical Constants</h2>
   </section>
 <form method=post action="">
 <table>
@@ -12,25 +12,7 @@
   </tr>
  {% endfor %} 
 </table>
-<p><input type=submit value=Submit></form></p>
-
-
-{% if form.A.errors %}
-            <ul class="errors">
-                {% for error in form.A.errors %}
-                    <li>{{ error }}</li>
-                {% endfor %}
-            </ul>
-        {% endif %}
-{% if form.n.errors %}
-            <ul class="errors">
-                {% for error in form.n.errors %}
-                    <li>{{ error }}</li>
-                {% endfor %}
-            </ul>
-        {% endif %}
-        
-        
+<p><input type=submit value=Submit></form></p>        
 
 {% if filename != None %}
 
