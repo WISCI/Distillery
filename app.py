@@ -14,17 +14,29 @@ import os
 #@app.route("/myplot", methods=["GET"])
 matplotlib.use('Agg')
 
-class InputForm(Form):
+class PlotForm(Form):
     optcons=glob.glob("./static/opticalconstants/*")
     optcons.sort()
     listopt=[]
-    print(optcons)
     for i_optcon,optcon in enumerate(optcons):
         listopt.append((i_optcon,optcon.split("/")[-1].split(".")[0]))
     print(listopt)
-    #A = FloatField(label="Amplitude", default=1.0,validators=[validators.NumberRange(min=1,max=10,message="A outside of bounds 1<=A<=10")])
-    #b = FloatField(label="Offset", default=1.0,validators=[validators.NumberRange()])
-    #n = FloatField(label="Power", default=2.0,validators=[validators.NumberRange(min=1,max=10,message="n outside of bounds 1<=n<=10")])
+   
+    optc=SelectField("Species",choices=listopt)
+    options_sil=SelectMultipleField("Select Silicates (unused)",choices=listopt)
+    options_car=SelectMultipleField("Select Carbons (unused)",choices=listopt)
+    options_ice=SelectMultipleField("Select Ices (unused)",choices=listopt)
+    savedata= BooleanField(label="Make raw data available for download",render_kw={'checked': False})
+    ylog= BooleanField(label="Log Y-axis",default="")
+
+
+class ExtrapolateForm(Form):
+    optcons=glob.glob("./static/opticalconstants/*")
+    optcons.sort()
+    listopt=[]
+    for i_optcon,optcon in enumerate(optcons):
+        listopt.append((i_optcon,optcon.split("/")[-1].split(".")[0]))
+    print(listopt)
     
     optc=SelectField("Species",choices=listopt)
     options_sil=SelectMultipleField("Select Silicates (unused)",choices=listopt)
@@ -32,6 +44,28 @@ class InputForm(Form):
     options_ice=SelectMultipleField("Select Ices (unused)",choices=listopt)
     savedata= BooleanField(label="Make raw data available for download",render_kw={'checked': False})
     ylog= BooleanField(label="Log Y-axis",default="")
+
+
+class MixingForm(Form):
+    optcons=glob.glob("./static/opticalconstants/*")
+    optcons.sort()
+    listopt=[]
+    for i_optcon,optcon in enumerate(optcons):
+        listopt.append((i_optcon,optcon.split("/")[-1].split(".")[0]))
+    #Add vacuum to list of choices for porosity calculations
+    listopt.append((i_optcon+1,'vacuum'))
+    print(listopt)
+    
+    optc1=SelectField("1st Species",choices=listopt)
+    frac1=FloatField(label="Fraction", default=1.0,validators=[validators.NumberRange(min=0,max=1,message="Fraction outside of bounds 0<=f<=1")])
+    optc2=SelectField("2nd Species",choices=listopt)
+    frac2=FloatField(label="Fraction", default=0.0,validators=[validators.NumberRange(min=0,max=1,message="Fraction outside of bounds 0<=f<=1")])
+    optc3=SelectField("3rd Species",choices=listopt)
+    frac3=FloatField(label="Fraction", default=0.0,validators=[validators.NumberRange(min=0,max=1,message="Fraction outside of bounds 0<=f<=1")])
+    savedata= BooleanField(label="Make output data available for download",render_kw={'checked': True})
+    ylog= BooleanField(label="Log Y-axis",default="")
+
+
 
 app = Flask(__name__)
 
@@ -65,7 +99,7 @@ def download_file(name):
 def plot():
     if True:
     #try:
-        form=InputForm(request.form)
+        form=PlotForm(request.form)
         if request.method == 'POST' and form.validate():
             optcons=glob.glob("./static/opticalconstants/*")
             optcons.sort()
@@ -120,7 +154,7 @@ def plot():
 def extrapolate():
     if True:
     #try:
-        form=InputForm(request.form)
+        form=ExtrapolateForm(request.form)
         if request.method == 'POST' and form.validate():
             optcons=glob.glob("./static/opticalconstants/*")
             optcons.sort()
@@ -173,53 +207,67 @@ def extrapolate():
 def mixing():
     if True:
     #try:
-        form=InputForm(request.form)
+        form=MixingForm(request.form)
         if request.method == 'POST' and form.validate():
             optcons=glob.glob("./static/opticalconstants/*")
             optcons.sort()
-            #print("form data?",np.int32(form.optc.data))
-            #print(optcons[np.int32(form.optc.data)])
-            #arr1,arr2,arr3=np.loadtxt(optcons[np.int32(form.optc.data)],unpack=1)
             
-            with open(optcons[np.int32(form.optc.data)]) as datafile:
-                data  = json.load(datafile)
+            #sort out which species and how many in what order:
+            if np.sum(form.frac1.data + form.frac2.data + form.frac3.data) == 0.0 :
+                return render_template('err.html',page='Mixing',error="Sum of fractions cannot be zero.")
 
+            if form.frac1.data == 0.0:
+                return render_template('err.html',page='Mixing',error="First species fraction cannot be zero.")
 
+            data_array = []
+
+            with open(optcons[np.int32(form.optc1.data)]) as datafile:
+                data_array.append(json.load(datafile))
+
+            if form.frac2.data != 0.0:
+                with open(optcons[np.int32(form.optc2.data)]) as datafile:
+                    data_array.append(json.load(datafile))
+
+            if form.frac3.data != 0.0: 
+                with open(optcons[np.int32(form.optc2.data)]) as datafile:
+                    data_array.append(json.load(datafile))
+
+            nspecies = len(data_array)
             # magic data reduction and calculations take place here
+            plot_urls=[]
+            for i in range(0,nspecies):
+                data = data_array[i]
 
-            img = io.BytesIO()
+                img = io.BytesIO()
     
-            x = np.arange(10)
-            plt.title("somebodys_plot "+str(datetime.date.today())+" "+optcons[np.int32(form.optc.data)].split("/")[-1].split(".")[0])
-            plt.plot(data['wavelength'],data['n'],"-k",label="$n$")
-            plt.plot(data['wavelength'],data['k'],"-r",label="$k$")
-            plt.xlabel(r"Wavelength ($\mu$m)")
-            plt.ylabel(r"Refractive indices $n$,$k$")
-            #print(form.ylog.data)
-            if form.ylog.data == True:
-                plt.yscale("log")
-            plt.xscale("log")
-            plt.legend()
-            plt.savefig(img, format='svg')
-            plt.close()
-            img.seek(0)
-            plot_url = base64.b64encode(img.getvalue()).decode('utf8')
+                x = np.arange(10)
+                plt.title("somebodys_plot "+str(datetime.date.today())+" "+optcons[np.int32(form.optc1.data)].split("/")[-1].split(".")[0])
+                plt.plot(data['wavelength'],data['n'],"-k",label="$n$")
+                plt.plot(data['wavelength'],data['k'],"-r",label="$k$")
+                plt.xlabel(r"Wavelength ($\mu$m)")
+                plt.ylabel(r"Refractive indices $n$,$k$")
+                #print(form.ylog.data)
+                if form.ylog.data == True:
+                    plt.yscale("log")
+                plt.xscale("log")
+                plt.legend()
+                plt.savefig(img, format='svg')
+                plt.close()
+                img.seek(0)
 
-            if form.savedata.data == True:
-                file_uuid = str(uuid.uuid4())
-                filename="distillery_"+file_uuid+".csv"
-                np.savetxt("./static/client/"+filename,np.c_[data['wavelength'],data['n'],data['k']])
-            else:
-                filename=None
-            return render_template('mixing.html', plot_url=plot_url,form=form,
-                                    values=data,
-                                    filename=filename)
-        else:
-            plot_url=None
+                plot_urls.append(base64.b64encode(img.getvalue()).decode('utf8'))
+
             filename=None
-            data=None
-            return render_template('mixing.html', plot_url=plot_url,form=form,
-                                    values=data,
+            return render_template('mixing.html', plot_urls=plot_urls,form=form,
+                                    values=data_array,
+                                    filename=filename)
+
+        else:
+            plot_urls=None
+            filename=None
+            data_array=None
+            return render_template('mixing.html', plot_urls=plot_urls,form=form,
+                                    values=data_array,
                                     filename=filename)
 
 app.run(debug=True)

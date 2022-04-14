@@ -1,5 +1,6 @@
 <!doctype html>
 <title>WISCI Distillery</title>
+<h1>Mixing</h1>
 <section>
   <h2>Input</h2>
   </section>
@@ -12,42 +13,53 @@
   </tr>
  {% endfor %} 
 </table>
-<p><input type=submit value=Submit></form></p>        
+<p><input type=submit value=Submit></form></p>
+
+{% if plot_urls != None%}
+<section>
+  <h2>Species to be combined:</h2>
+  {% for plot in plot_urls %}
+    <img src="data:image/svg+xml;base64, {{ plot }}" alt="Plot of wavelength vs. optical constants n,k">
+  {% endfor %}
+</section>
+
+<section>
+<h2>Output</h2>
+{% if plot_urlm != None %}
+  <img src="data:image/svg+xml;base64, {{ plot_urlm }}" alt="Plot of wavelength vs. optical constants n,k for requested mixture">
+{% endif %}
 
 {% if filename != None %}
-
-
 <form action={{ url_for('download_file',name=filename) }}>
     <input type="submit" value="Download raw data" />
 </form>
-
 {% endif %}
 
 
-<section>
-  <h2>Output</h2>
-{% if plot_url != None %}
-<img src="data:image/svg+xml;base64, {{ plot_url }}" alt="Plot of wavelength vs. optical constants n,k">
-
+<h2>Material properties:</h2>
 <table>
- {% for key, value in values.items() %}
+{% for value in values %}
+  {% for key, val in value.items() %}
   <tr>
   {% if key != "n" and key != "k" and key != "wavelength" %}
     <td>{{ key }}</td>
     {% if key == 'temperature' %}
-        <td> {{ value }} K <td> 
+        <td> {{ val }} K <td> 
     {% elif key == 'density' %}
-        <td> {{ value }} gcm^-3 <td> 
+        <td> {{ val }} gcm^-3 <td> 
     {% else %}
-        <td>{{ value }}</td>
+        <td>{{ val }}</td>
     {% endif %}
   {% endif %}
  {% endfor %} 
+{% endfor %}
   </tr>
 </table>
 
+
 {% endif %}
-  </section>
+</section>
+
 
 
 

@@ -1,5 +1,6 @@
 <!doctype html>
 <title>WISCI Distillery</title>
+<h1>Plotting</h1>
 <section>
   <h2>Input</h2>
   </section>
@@ -15,12 +16,9 @@
 <p><input type=submit value=Submit></form></p>        
 
 {% if filename != None %}
-
-
-<form action={{ url_for('download_file',name=filename) }}>
+  <form action={{ url_for('download_file',name=filename) }}>
     <input type="submit" value="Download raw data" />
-</form>
-
+  </form>
 {% endif %}
 
 
