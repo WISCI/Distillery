@@ -14,6 +14,8 @@ import os
 #@app.route("/myplot", methods=["GET"])
 matplotlib.use('Agg')
 
+
+
 #
 # Here we define the input forms for each page on the site
 #
@@ -98,6 +100,10 @@ app = Flask(__name__)
 import datetime
 
 import base64
+
+@app.route("/favicon.ico")
+def favicon():
+    return send_from_directory('./static',"favicon_wisci.png",mimetype = 'image/vnd.microsoft.icon')
 
 
 #@context.processor
