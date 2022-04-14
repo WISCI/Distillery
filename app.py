@@ -83,8 +83,8 @@ def kramers_kronig(data_array):
             kk_n = np.asarray(data['n'])
             kk_k = np.asarray(data['k'])
         else:
-            kk_n = 1/len(data_array)*(kk_n - data['n'])
-            kk_k = 1/len(data_array)*(kk_k - data['k'])
+            kk_n = 1/len(data_array)*(np.asarray(data['n'])) + 1.
+            kk_k = 1/len(data_array)*(kk_k + np.asarray(data['k']))
 
     return kk_l,kk_n,kk_k
 
@@ -307,8 +307,8 @@ def mixing():
 
             x = np.arange(10)
             plt.title("somebodys_plot "+str(datetime.date.today())+" "+optcons[np.int32(form.optc1.data)].split("/")[-1].split(".")[0])
-            plt.plot(data['wavelength'],data['n'],"-k",label="$n$")
-            plt.plot(data['wavelength'],data['k'],"-r",label="$k$")
+            plt.plot(mixture['wavelength'],mixture['n'],"-k",label="$n$")
+            plt.plot(mixture['wavelength'],mixture['k'],"-r",label="$k$")
             plt.xlabel(r"Wavelength ($\mu$m)")
             plt.ylabel(r"Refractive indices $n$,$k$")
             #print(form.ylog.data)
@@ -319,7 +319,7 @@ def mixing():
             plt.savefig(img, format='svg')
             plt.close()
             img.seek(0)
-            plot_urlm = base64.b64encode(img.getvalue()).decode('utf8')
+            plot_mixture = base64.b64encode(img.getvalue()).decode('utf8')
 
             if form.savedata.data == True:
                 file_uuid = str(uuid.uuid4())
@@ -328,7 +328,7 @@ def mixing():
             else: 
                 filename=None
             return render_template('mixing.html', plot_urls=plot_urls,form=form,
-                                    values=data_array,mixture=mixture,plot_urlm=plot_urlm,
+                                    values=data_array,mixture=mixture,plot_urlm=plot_mixture,
                                     filename=filename)
 
         else:
@@ -336,9 +336,9 @@ def mixing():
             filename=None
             data_array=None
             mixture=None
-            plot_urlm=None
+            plot_mixture=None
             return render_template('mixing.html', plot_urls=plot_urls,form=form,
-                                    values=data_array,mixture=mixture,plot_urlm=plot_urlm,
+                                    values=data_array,mixture=mixture,plot_urlm=plot_mixture,
                                     filename=filename)
 
 app.run(debug=True)
