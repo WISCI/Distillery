@@ -302,6 +302,11 @@ def mixing():
 
             out_l,out_n,out_k = kramers_kronig(data_array)
 
+            print(species)
+            composition_string = ""
+            for i in range(0,nspecies):
+                composition_string += str(fracs[i])+"x "+species[i]+" "
+
             #create dictionary object for mixture species
             mixture = {'species' : 'mixture: '+composition_string,
                        'formula' : 'N/A',
@@ -316,12 +321,7 @@ def mixing():
 
             #plot for mixture
             img = io.BytesIO()
-
-            print(species)
-            composition_string = ""
-            for i in range(0,nspecies):
-                composition_string += str(fracs[i])+"x "+species[i]+" "
-
+            
             x = np.arange(10)
             plt.title("somebodys_plot "+str(datetime.date.today())+" mixture: "+composition_string)
             plt.plot(mixture['wavelength'],mixture['n'],"-k",label="$n$")
