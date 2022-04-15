@@ -254,19 +254,24 @@ def mixing():
                 return render_template('err.html',page='Mixing',error="First species fraction cannot be zero.")
 
             data_array = []
-
+            species = []
+            fracs = []
             with open(optcons[np.int32(form.optc1.data)]) as datafile:
                 data_array.append(json.load(datafile))
-
+                species.append(optcons[np.int32(form.optc1.data)].split("/")[-1].split(".")[0])
+                fracs.append(form.frac1.data)
             if form.frac2.data != 0.0:
                 with open(optcons[np.int32(form.optc2.data)]) as datafile:
                     data_array.append(json.load(datafile))
+                    species.append(optcons[np.int32(form.optc2.data)].split("/")[-1].split(".")[0])
+                    fracs.append(form.frac2.data)
 
             if form.frac3.data != 0.0: 
                 with open(optcons[np.int32(form.optc3.data)]) as datafile:
                     data_array.append(json.load(datafile))
+                    species.append(optcons[np.int32(form.optc3.data)].split("/")[-1].split(".")[0])
+                    fracs.append(form.frac3.data)
 
-            fracs = [form.frac1.data,form.frac2.data,form.frac3.data]
             nspecies = len(data_array)
             # magic data reduction and calculations take place here
             plot_urls=[]
@@ -278,7 +283,7 @@ def mixing():
                 img = io.BytesIO()
     
                 x = np.arange(10)
-                plt.title("somebodys_plot "+str(datetime.date.today())+" "+optcons[np.int32(form.optc1.data)].split("/")[-1].split(".")[0])
+                plt.title("somebodys_plot "+str(datetime.date.today())+" "+species[i])
                 plt.plot(data['wavelength'],data['n'],"-k",label="$n$")
                 plt.plot(data['wavelength'],data['k'],"-r",label="$k$")
                 plt.xlabel(r"Wavelength ($\mu$m)")
@@ -311,8 +316,13 @@ def mixing():
             #plot for mixture
             img = io.BytesIO()
 
+            print(species)
+            composition_string = ""
+            for i in range(0,nspecies):
+                composition_string += str(fracs[i])+"x"+species[i]+" "
+
             x = np.arange(10)
-            plt.title("somebodys_plot "+str(datetime.date.today())+" "+optcons[np.int32(form.optc1.data)].split("/")[-1].split(".")[0])
+            plt.title("somebodys_plot "+str(datetime.date.today())+" mixture: "+composition_string)
             plt.plot(mixture['wavelength'],mixture['n'],"-k",label="$n$")
             plt.plot(mixture['wavelength'],mixture['k'],"-r",label="$k$")
             plt.xlabel(r"Wavelength ($\mu$m)")
