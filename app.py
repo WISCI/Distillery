@@ -11,6 +11,9 @@ import matplotlib.pyplot as plt
 import glob
 import json
 import os
+import scipy.interpolate as intp
+from scipy import integrate
+import scipy.fftpack as ft
 #@app.route("/myplot", methods=["GET"])
 matplotlib.use('Agg')
 
@@ -87,8 +90,9 @@ def kramers_kronig(data_array):
         else:
             kk_n = 1/len(data_array)*(np.asarray(data['n'])) + 1.
             kk_k = 1/len(data_array)*(kk_k + np.asarray(data['k']))
+        
 
-    return kk_l,kk_n,kk_k
+    return kk_l,kk_n, kk_k
 
 
 #
