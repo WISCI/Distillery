@@ -192,9 +192,6 @@ def extrapolate():
         if request.method == 'POST' and form.validate():
             optcons=glob.glob("./static/opticalconstants/*")
             optcons.sort()
-            #print("form data?",np.int32(form.optc.data))
-            #print(optcons[np.int32(form.optc.data)])
-            #arr1,arr2,arr3=np.loadtxt(optcons[np.int32(form.optc.data)],unpack=1)
             
             with open(optcons[np.int32(form.optc.data)]) as datafile:
                 data  = json.load(datafile)
@@ -302,7 +299,7 @@ def mixing():
             out_l,out_n,out_k = kramers_kronig(data_array)
 
             #create dictionary object for mixture species
-            mixture = {'species' : 'mixture',
+            mixture = {'species' : 'mixture: '+composition_string,
                        'formula' : 'N/A',
                        'wavelength' : out_l,
                        'n' : out_n,
@@ -319,7 +316,7 @@ def mixing():
             print(species)
             composition_string = ""
             for i in range(0,nspecies):
-                composition_string += str(fracs[i])+"x"+species[i]+" "
+                composition_string += str(fracs[i])+"x "+species[i]+" "
 
             x = np.arange(10)
             plt.title("somebodys_plot "+str(datetime.date.today())+" mixture: "+composition_string)
