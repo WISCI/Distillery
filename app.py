@@ -47,10 +47,15 @@ class ExtrapolateForm(Form):
     print(listopt)
     
     optc=SelectField("Species",choices=listopt)
-    options_sil=SelectMultipleField("Select Silicates (unused)",choices=listopt)
-    options_car=SelectMultipleField("Select Carbons (unused)",choices=listopt)
-    options_ice=SelectMultipleField("Select Ices (unused)",choices=listopt)
-    savedata= BooleanField(label="Make raw data available for download",render_kw={'checked': False})
+    #options_sil=SelectMultipleField("Select Silicates (unused)",choices=listopt)
+    #options_car=SelectMultipleField("Select Carbons (unused)",choices=listopt)
+    #options_ice=SelectMultipleField("Select Ices (unused)",choices=listopt)
+    wmin=FloatField(label="Shortest wavelength for extrapolated values (um)", default=0.1,validators=[validators.NumberRange(min=0.01,max=10000,message="Number outside of bounds 0.01<=f<=10000")])
+    wmax=FloatField(label="Longest wavelength for extrapolated values (um)", default=1000.0,validators=[validators.NumberRange(min=0.01,max=10000,message="Number outside of bounds 0.01<=f<=10000")])   
+    nlong=FloatField(label="Number of extrapolated data points at longer wavelengths", default=100,validators=[validators.NumberRange(min=2,max=1000,message="Number outside of bounds 2<=f<=1000")])
+    nshort=FloatField(label="Number of extrapolated data points at shorter wavelengths", default=100,validators=[validators.NumberRange(min=2,max=1000,message="Number outside of bounds 2<=f<=1000")])    
+    exlog= BooleanField(label="Extrapolate in Log space",default="")
+    #savedata= BooleanField(label="Make raw data available for download",render_kw={'checked': False})
     ylog= BooleanField(label="Log Y-axis",default="")
 
 
@@ -94,35 +99,38 @@ def kramers_kronig(data_array):
     
     # the wavelength might become a parameter to set as an input for the user in a later version! 
     
-    wavelength_range = [1.0e-4, 2.0e4]
-    
-    chir = ref_re ** 2 - ref_im ** 2
-    chii = 2 * ref_re * ref_im
-    
-    min_step = np.min(np.diff(wavelength))
-    nsteps = int((wavelength_range[1] - wavelength_range[0]) / min_step)
-    w_grid = np.linspace(wavelength_range[0], wavelength_range[1], nsteps)
-    
-    interp_imag_dielectric_func2 = intp.interp1d(wavelength, chii, kind='linear', fill_value=0.,bounds_error=False, assume_sorted=True)
-    chii_intp2=interp_imag_dielectric_func2(w_grid)
-    
-    chir_trans_grid = ft.hilbert(chii_intp2[::-1])[::-1]
-    chir_zero = integrate.simpson((chii_intp2 / (1 / w_grid))[::-1], (1 / w_grid)[::-1])
-    shift = chir_zero - chir_trans_grid[-1]
-    chir_trans_grid += shift
-    
-    f = intp.interp1d(w_grid, chir_trans_grid)
-    chir_trans = f(wavelength)
-    
-    # transforming back to n and k
+        wavelength_range = [1.0e-4, 2.0e4]
+        
+        chir = ref_re ** 2 - ref_im ** 2
+        chii = 2 * ref_re * ref_im
+        
+        min_step = np.min(np.diff(wavelength))
+        nsteps = int((wavelength_range[1] - wavelength_range[0]) / min_step)
+        w_grid = np.linspace(wavelength_range[0], wavelength_range[1], nsteps)
+        
+        interp_imag_dielectric_func2 = intp.interp1d(wavelength, chii, kind='linear', fill_value=0.,bounds_error=False, assume_sorted=True)
+        chii_intp2=interp_imag_dielectric_func2(w_grid)
+        
+        chir_trans_grid = ft.hilbert(chii_intp2[::-1])[::-1]
+        chir_zero = integrate.simpson((chii_intp2 / (1 / w_grid))[::-1], (1 / w_grid)[::-1])
+        shift = chir_zero - chir_trans_grid[-1]
+        chir_trans_grid += shift
+        
+        f = intp.interp1d(w_grid, chir_trans_grid)
+        chir_trans = f(wavelength)
+        
+        # transforming back to n and k
 
-    chi = chir_trans + 1.0j * chii
-    kk_n = np.sqrt((np.abs(chi) + chir_trans) / 2.0)
-    kk_k = np.sqrt((np.abs(chi) - chir_trans) / 2.0)
-    kk_l = wavelength        
+        chi = chir_trans + 1.0j * chii
+        kk_n = np.sqrt((np.abs(chi) + chir_trans) / 2.0)
+        kk_k = np.sqrt((np.abs(chi) - chir_trans) / 2.0)
+        kk_l = wavelength        
 
     return kk_l,kk_n, kk_k
 
+
+def extend():
+    print("Not yet implemented!")
 
 #
 # Here we start the app!
@@ -183,7 +191,7 @@ def plot():
             img = io.BytesIO()
     
             x = np.arange(10)
-            plt.title("somebodys_plot "+str(datetime.date.today())+" "+optcons[np.int32(form.optc.data)].split("/")[-1].split(".")[0])
+            plt.title(optcons[np.int32(form.optc.data)].split("/")[-1].split(".")[0])
             plt.plot(data['wavelength'],data['n'],"-k",label="$n$")
             plt.plot(data['wavelength'],data['k'],"-r",label="$k$")
             plt.xlabel(r"Wavelength ($\mu$m)")
@@ -229,13 +237,16 @@ def extrapolate():
             with open(optcons[np.int32(form.optc.data)]) as datafile:
                 data  = json.load(datafile)
 
-
             # magic data reduction and calculations take place here
+            if form.exlog.data == False :
+                kind = 'linear'
+            else:
+                kind = 'log'
 
             img = io.BytesIO()
     
             x = np.arange(10)
-            plt.title("somebodys_plot "+str(datetime.date.today())+" "+optcons[np.int32(form.optc.data)].split("/")[-1].split(".")[0])
+            plt.title(optcons[np.int32(form.optc.data)].split("/")[-1].split(".")[0])
             plt.plot(data['wavelength'],data['n'],"-k",label="$n$")
             plt.plot(data['wavelength'],data['k'],"-r",label="$k$")
             plt.xlabel(r"Wavelength ($\mu$m)")
@@ -248,23 +259,20 @@ def extrapolate():
             plt.savefig(img, format='svg')
             plt.close()
             img.seek(0)
-            plot_url = base64.b64encode(img.getvalue()).decode('utf8')
+            extrapolate_plot = base64.b64encode(img.getvalue()).decode('utf8')
 
-            if form.savedata.data == True:
-                file_uuid = str(uuid.uuid4())
-                filename="distillery_"+file_uuid+".csv"
-                np.savetxt("./static/client/"+filename,np.c_[data['wavelength'],data['n'],data['k']])
-            else:
-                filename=None
-            return render_template('extrapolate.html', plot_url=plot_url,form=form,
-                                    values=data,
+            file_uuid = str(uuid.uuid4())
+            filename="distillery_"+file_uuid+".csv"
+            np.savetxt("./static/client/"+filename,np.c_[data['wavelength'],data['n'],data['k']])
+            return render_template('extrapolate.html', plot_url=extrapolate_plot,form=form,
+                                    values=extrapolate_data,message=message,
                                     filename=filename)
         else:
-            plot_url=None
+            extrapolate_plot=None
             filename=None
             data=None
-            return render_template('extrapolate.html', plot_url=plot_url,form=form,
-                                    values=data,
+            return render_template('extrapolate.html', plot_url=extrapolate_plot,form=form,
+                                    values=extrapolate_data,message=message,
                                     filename=filename)
 
 @app.route('/mixing',methods=['GET','POST'])
@@ -313,7 +321,7 @@ def mixing():
                 img = io.BytesIO()
     
                 x = np.arange(10)
-                plt.title("somebodys_plot "+str(datetime.date.today())+" "+species[i])
+                plt.title(species[i])
                 plt.plot(data['wavelength'],data['n'],"-k",label="$n$")
                 plt.plot(data['wavelength'],data['k'],"-r",label="$k$")
                 plt.xlabel(r"Wavelength ($\mu$m)")
@@ -352,7 +360,7 @@ def mixing():
             img = io.BytesIO()
             
             x = np.arange(10)
-            plt.title("somebodys_plot "+str(datetime.date.today())+" mixture: "+composition_string)
+            plt.title("mixture: "+composition_string)
             plt.plot(mixture['wavelength'],mixture['n'],"-k",label="$n$")
             plt.plot(mixture['wavelength'],mixture['k'],"-r",label="$k$")
             plt.xlabel(r"Wavelength ($\mu$m)")

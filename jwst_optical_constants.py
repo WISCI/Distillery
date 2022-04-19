@@ -15,7 +15,7 @@ def ReadData(species=None):
     
     # lnk file has 3 columns, space delimited
     # wavelength (um), n, k
-    with open('data/'+species+'.lnk', 'r') as f:
+    with open('./data/'+species+'.lnk', 'r') as f:
         lnk_table = f.readlines()
 
     l = []
@@ -37,7 +37,7 @@ def ReadData(species=None):
     # type (PYROXINE, SILICATE, etc.)
     # origin (one of LABORATORY, CALCULATION, or HYBRID)
     # citation(s)
-    with open('data/'+species+'.info', 'r') as f:
+    with open('./data/'+species+'.info', 'r') as f:
         info_table = f.readlines()
 
     mydict = {'species': info_table[0].strip(),
@@ -56,14 +56,14 @@ def ReadData(species=None):
 
 def ReadJSON(species=None):
 #function to write a json file for a single species
-    with open('json/'+species+'.json', 'r') as payload:
+    with open('./json/'+species+'.json', 'r') as payload:
         mydict = json.load(payload)
 
     return mydict
 
 def WriteJSON(mydict):
 #function to write a json file for a single species
-    with open('json/'+mydict['species']+'.json', 'w') as payload:
+    with open('./json/'+mydict['species']+'.json', 'w') as payload:
         json.dump(mydict, payload)
 
 def CreateSQL(server='localhost',port='1433',database='OpticalConstants',username='user',password='password'):
