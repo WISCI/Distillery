@@ -115,13 +115,41 @@ def kramers_kronig(data_array):
 
     return kk_l,kk_n, kk_k
 
-def Bruggeman(data_array):
+def Bruggeman(fracs,data_array):
   print("Not yet implemented.")
 
   return wave,nn,kk
 
-def MaxwellGarland(data_array):
-  print("Not yet implemented.")
+def MaxwellGarnett(fracs,data_array):
+  #matrix is the larger of the two volume fractions
+  print(fracs, np.argmax(np.asarray(fracs)))
+  wave = data_array[np.argmax(fracs)]['wavelength']
+  nm = data_array[np.argmax(fracs)]['n']
+  km = data_array[np.argmax(fracs)]['k']
 
-  return wave,nn,kk
+  epsm = []
+  for i in range(0,len(nm)):
+    epsm.append(complex(nm[i],km[i]))
+  epsm = np.asarray(epsm)
+
+  ni = data_array[np.argmin(fracs)]['n']
+  ki = data_array[np.argmin(fracs)]['k']
+
+  epsi = []
+  for i in range(0,len(ni)):
+    epsi.append(complex(ni[i],ki[i]))
+  epsi = np.asarray(epsi)
+
+  di = 1. - fracs[np.argmax(fracs)]
+
+  epse = epsm * ( (2*di*(epsi - epsm) + epsi + 2*epsm) / (2*epsm + epsi - di*(epsi - epsm)) )
+
+  print(epse)
+
+  mg_n = epse.real
+  mg_k = epse.imag
+
+  print(wave,mg_n,mg_k)
+
+  return wave,mg_n,mg_k
 

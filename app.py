@@ -11,9 +11,7 @@ import matplotlib.pyplot as plt
 import glob
 import json
 import os
-import scipy.interpolate as intp
-from scipy import integrate
-import scipy.fftpack as ft
+
 import distillery #functions to manipulate optical constants - everything not webpage related.
 
 #@app.route("/myplot", methods=["GET"])
@@ -68,13 +66,14 @@ class MixingForm(Form):
     #Add vacuum to list of choices for porosity calculations
     listopt.append((i_optcon+1,'vacuum'))
     print(listopt)
-    
+    listmix = ['Bruggeman','MaxwellGarnett']
     optc1=SelectField("1st Species",choices=listopt)
     frac1=FloatField(label="Fraction", default=1.0,validators=[validators.NumberRange(min=0,max=1,message="Fraction outside of bounds 0<=f<=1")])
     optc2=SelectField("2nd Species",choices=listopt)
     frac2=FloatField(label="Fraction", default=0.0,validators=[validators.NumberRange(min=0,max=1,message="Fraction outside of bounds 0<=f<=1")])
     optc3=SelectField("3rd Species",choices=listopt)
     frac3=FloatField(label="Fraction", default=0.0,validators=[validators.NumberRange(min=0,max=1,message="Fraction outside of bounds 0<=f<=1")])
+    mixrule=SelectField("Mixing Rule",choices=listmix)
     savedata= BooleanField(label="Make output data available for download",render_kw={'checked': True})
     ylog= BooleanField(label="Log Y-axis",default="")
 
@@ -288,7 +287,12 @@ def mixing():
 
                 plot_urls.append(base64.b64encode(img.getvalue()).decode('utf8'))
 
-            out_l,out_n,out_k = distillery.kramers_kronig(data_array)
+            print(form.mixrule.data)
+            if form.mixrule.data == 'Bruggeman' :
+                out_l,out_n,out_k = distillery.Bruggeman(fracs,data_array)
+
+            elif form.mixrule.data == 'MaxwellGarnett' :
+                out_l,out_n,out_k = distillery.MaxwellGarnett(fracs,data_array)
 
             print(species)
             composition_string = ""
