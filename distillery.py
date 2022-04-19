@@ -179,3 +179,73 @@ def MaxwellGarnett(fracs,data_array):
 
   return wave,mg_n,mg_k
 
+def Extrapolation(species,wave_min=0.1,wave_max=1000.0):
+  """Function to extrapolate given realities to cover the full range of
+     a common, uniform wavelength grid."""
+
+  wave = species['wavelength']
+  real = species['n']
+  imag = species['k']
+
+  if wave_min < np.min(wave) and wave_max > np.max(wave):
+      print(species['species']," reality spectrum within bounds, no extrapolation required.")
+      extrap_wave, extrap_real, extrap_imag = wave, real, imag
+
+  if wave_min < np.min(wave) and wave_max <= np.max(wave):
+      print("Extrapolating to shorter wavelengths")
+
+      extra_wave = np.logspace(np.log10(0.9*wave_min),np.log10(wave[0]),num=100,base=10.0,endpoint=True)
+      
+      slope_real = (real[0] - real[1]) / (wave[1] - wave[0])
+      extra_real = real[0] + (slope_real * (extra_wave - wave[0]))
+
+      extra_imag = np.full((len(extra_real)),np.median(imag))
+
+      extrap_wave = np.append(extra_wave,wave[1:])
+      extrap_real = np.append(extra_real,real[1:])
+      extrap_imag = np.append(extra_imag,imag[1:])
+  
+  if wave_max > np.max(wave) and wave_min >= np.min(wave): 
+      print("Extrapolating to longer wavelengths")
+
+      extra_wave = np.logspace(np.log10(wave[-1]),np.log10(1.1*wave_max),num=100,base=10.0,endpoint=True)
+      
+      slope_real = (real[-2] - real[-1]) / (wave[-2] - wave[-1])
+      extra_real = real[-1] + (slope_real * (extra_wave - wave[-1]))
+
+      extra_imag = np.full((len(extra_real)),np.median(imag))
+
+      extrap_wave = np.append(wave,extra_wave[1:])
+      extrap_real = np.append(real,extra_real[1:])
+      extrap_imag = np.append(imag,extra_imag[1:])
+
+  if wave_min < np.min(wave) and wave_max > np.max(wave):
+      print("Extrapolating to both shorter and longer wavelengths")
+
+      #short wavelength part
+      extra_wave_lo = np.logspace(np.log10(0.9*wave_min),np.log10(wave[0]),num=100,base=10.0,endpoint=True)
+      
+      slope_real_lo = (real[0] - real[1]) / (wave[1] - wave[0])
+      extra_real_lo = real[0] + (slope_real_lo * (extra_wave_lo - wave[0]))
+
+      extra_imag_lo = np.full((len(extra_real_lo)),np.median(imag))
+
+      #long wavelength part
+      extra_wave_hi = np.logspace(np.log10(wave[-1]),np.log10(1.1*wave_max),num=100,base=10.0,endpoint=True)
+      
+      slope_real_hi = (real[-2] - real[-1]) / (wave[-2] - wave[-1])
+      extra_real_hi = real[-1] + (slope_real_hi * (extra_wave_hi - wave[-1]))
+
+      extra_imag_hi = np.full((len(extra_real_hi)),np.median(imag))
+
+      #stitch it all together (have to do this piecewise)
+      wave_mid = np.append(extra_wave_lo,wave[1:])
+      real_mid = np.append(extra_real_lo,real[1:])
+      imag_mid = np.append(extra_imag_lo,imag[1:])
+      
+      extrap_wave = np.append(wave_mid,extra_wave_hi[1:])
+      extrap_real = np.append(real_mid,extra_real_hi[1:])
+      extrap_imag = np.append(imag_mid,extra_imag_hi[1:])
+      
+  return extrap_wave, extrap_real, extrap_imag
+

@@ -21,6 +21,13 @@
 {% if plot_url != None %}
 <img src="data:image/svg+xml;base64, {{ plot_url }}" alt="Plot of wavelength vs. optical constants n,k">
 
+{% if filename != None %}
+  <form action={{ url_for('download_file',name=filename) }}>
+    <input type="submit" value="Download raw data" />
+  </form>
+{% endif %}
+
+<h2>Material properties</h2>
 <table>
  {% for key, value in values.items() %}
   <tr>
@@ -38,12 +45,6 @@
   </tr>
 </table>
 
-
-{% if filename != None %}
-  <form action={{ url_for('download_file',name=filename) }}>
-    <input type="submit" value="Download raw data" />
-  </form>
-{% endif %}
 
 {% endif %}
 </section>

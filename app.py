@@ -192,6 +192,8 @@ def extrapolate():
             else:
                 kind = 'log'
 
+            distillery.Extrapolation(data,wave_min=form.wmin.data,wave_max=form.wmax.data)
+
             img = io.BytesIO()
     
             x = np.arange(10)
@@ -218,8 +220,9 @@ def extrapolate():
                                     filename=filename)
         else:
             extrapolate_plot=None
+            extrapolate_data=None
             filename=None
-            data=None
+            message=None
             return render_template('extrapolate.html', plot_url=extrapolate_plot,form=form,
                                     values=extrapolate_data,message=message,
                                     filename=filename)
