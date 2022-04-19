@@ -14,10 +14,10 @@ import os
 import scipy.interpolate as intp
 from scipy import integrate
 import scipy.fftpack as ft
+import distillery #functions to manipulate optical constants - everything not webpage related.
+
 #@app.route("/myplot", methods=["GET"])
 matplotlib.use('Agg')
-
-
 
 #
 # Here we define the input forms for each page on the site
@@ -77,56 +77,6 @@ class MixingForm(Form):
     frac3=FloatField(label="Fraction", default=0.0,validators=[validators.NumberRange(min=0,max=1,message="Fraction outside of bounds 0<=f<=1")])
     savedata= BooleanField(label="Make output data available for download",render_kw={'checked': True})
     ylog= BooleanField(label="Log Y-axis",default="")
-
-
-#
-# Here we define the functions that manipulate the optical constants
-#
-def kramers_kronig(data_array):
-
-    for i in range(0,len(data_array)):
-
-        data = data_array[i]
-
-        wavelength = np.asarray(data['wavelength'])
-        ref_re = np.asarray(data['n'])
-        ref_im = np.asarray(data['k'])
-
-            
-    #ref_im = np.asarray(data_array['k'])
-    #ref_re = np.asarray(data_array['n'])
-    #wavelength = np.asarray(data_array['wavelength'])
-    
-    # the wavelength might become a parameter to set as an input for the user in a later version! 
-    
-        wavelength_range = [1.0e-4, 2.0e4]
-        
-        chir = ref_re ** 2 - ref_im ** 2
-        chii = 2 * ref_re * ref_im
-        
-        min_step = np.min(np.diff(wavelength))
-        nsteps = int((wavelength_range[1] - wavelength_range[0]) / min_step)
-        w_grid = np.linspace(wavelength_range[0], wavelength_range[1], nsteps)
-        
-        interp_imag_dielectric_func2 = intp.interp1d(wavelength, chii, kind='linear', fill_value=0.,bounds_error=False, assume_sorted=True)
-        chii_intp2=interp_imag_dielectric_func2(w_grid)
-        
-        chir_trans_grid = ft.hilbert(chii_intp2[::-1])[::-1]
-        chir_zero = integrate.simpson((chii_intp2 / (1 / w_grid))[::-1], (1 / w_grid)[::-1])
-        shift = chir_zero - chir_trans_grid[-1]
-        chir_trans_grid += shift
-        
-        f = intp.interp1d(w_grid, chir_trans_grid)
-        chir_trans = f(wavelength)
-        
-        # transforming back to n and k
-
-        chi = chir_trans + 1.0j * chii
-        kk_n = np.sqrt((np.abs(chi) + chir_trans) / 2.0)
-        kk_k = np.sqrt((np.abs(chi) - chir_trans) / 2.0)
-        kk_l = wavelength        
-
-    return kk_l,kk_n, kk_k
 
 
 def extend():
@@ -298,6 +248,7 @@ def mixing():
                 data_array.append(json.load(datafile))
                 species.append(optcons[np.int32(form.optc1.data)].split("/")[-1].split(".")[0])
                 fracs.append(form.frac1.data)
+
             if form.frac2.data != 0.0:
                 with open(optcons[np.int32(form.optc2.data)]) as datafile:
                     data_array.append(json.load(datafile))
@@ -337,7 +288,7 @@ def mixing():
 
                 plot_urls.append(base64.b64encode(img.getvalue()).decode('utf8'))
 
-            out_l,out_n,out_k = kramers_kronig(data_array)
+            out_l,out_n,out_k = distillery.kramers_kronig(data_array)
 
             print(species)
             composition_string = ""

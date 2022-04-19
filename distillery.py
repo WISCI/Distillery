@@ -1,11 +1,12 @@
 import numpy as np
 import json
-import pyodbc
+import scipy.interpolate as intp
+from scipy import integrate
+import scipy.fftpack as ft
 
 #To do list:
 # Support plotting
 # Support Flask + Plotly for dynamic website
-# Implement SQL database interaction (creation, read, write)
 # Implement sanity checks on files (both info and lnk present in directory)
 # Implement sanity checks on database (is a species with same name already in there)
 # Implement calculation of optical constants/Qabs/dielectric functions from given values
@@ -66,33 +67,61 @@ def WriteJSON(mydict):
     with open('./json/'+mydict['species']+'.json', 'w') as payload:
         json.dump(mydict, payload)
 
-def CreateSQL(server='localhost',port='1433',database='OpticalConstants',username='user',password='password'):
-#function to create a database
-    config = dict(server='localhost',port=1433,database=database,username=username,password= password)
+#
+# Here we define the functions that manipulate the optical constants
+#
+def kramers_kronig(data_array):
 
-    conn = pyodbc.connect("driver={SQL Server};server={server}; port={port}; database={database}; username={username}; password={password}",
-                          autocommit=True)
+    for i in range(0,len(data_array)):
 
-def WriteSQL(dbname):
-#function to add an entry to a database for a single species
-    print("Not yet implemented")
+        data = data_array[i]
 
-def MixSpecies(species1,species2,ratio=0.5):
-#function to mix optical constants from two (or more) species with a given ratio
-    print("Not yet implemented")
+        wavelength = np.asarray(data['wavelength'])
+        ref_re = np.asarray(data['n'])
+        ref_im = np.asarray(data['k'])
 
-def ConvertWavenumber(wavenumber):
-#function to convert wavenumber cm^-1 into wavelength um
+    #ref_im = np.asarray(data_array['k'])
+    #ref_re = np.asarray(data_array['n'])
+    #wavelength = np.asarray(data_array['wavelength'])
+    
+    # the wavelength might become a parameter to set as an input for the user in a later version! 
 
-    wavelength = 1e-4 / wavenumber
+    wavelength_range = [np.min(wavelength), np.max(wavelength)]
+    
+    chir = ref_re ** 2 - ref_im ** 2
+    chii = 2 * ref_re * ref_im
+    
+    min_step = np.min(np.diff(wavelength))
+    nsteps = int((wavelength_range[1] - wavelength_range[0]) / min_step)
+    w_grid = np.linspace(wavelength_range[0], wavelength_range[1], nsteps)
+    
+    interp_imag_dielectric_func2 = intp.interp1d(wavelength, chii, kind='linear', fill_value=0.,bounds_error=False, assume_sorted=True)
+    chii_intp2=interp_imag_dielectric_func2(w_grid)
+    
+    chir_trans_grid = ft.hilbert(chii_intp2[::-1])[::-1]
+    chir_zero = integrate.simpson((chii_intp2 / (1 / w_grid))[::-1], (1 / w_grid)[::-1])
+    shift = chir_zero - chir_trans_grid[-1]
+    chir_trans_grid += shift
+    
+    f = intp.interp1d(w_grid, chir_trans_grid)
+    chir_trans = f(wavelength)
+    
+    # transforming back to n and k
 
-    return wavelength
+    chi = chir_trans + 1.0j * chii
+    kk_n = np.sqrt((np.abs(chi) + chir_trans) / 2.0)
+    kk_k = np.sqrt((np.abs(chi) - chir_trans) / 2.0)
+    kk_l = wavelength        
 
-def ConvertOC(input=None,conversion='nk2bs'):
-#function to convert input to/from n,k into something else
+    return kk_l,kk_n, kk_k
 
-#Assuming mu = 1 (true for non-magnetic materials at optical wavelengths)
-#dielectric: e_real = n**2 - k**2
-#            e_imag = 2*n*k
-#            e_real + i e_imag = (n + i k)**2
-    print("Not yet implemented")
+def Bruggeman(data_array):
+  print("Not yet implemented.")
+
+  return wave,nn,kk
+
+def MaxwellGarland(data_array):
+  print("Not yet implemented.")
+
+  return wave,nn,kk
+
