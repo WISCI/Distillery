@@ -193,7 +193,7 @@ def extrapolate():
                 kind = 'log'
 
             extra_w, extra_n, extra_k = distillery.Extrapolation(data,wave_min=form.wmin.data,wave_max=form.wmax.data,
-                                                                logspace=form.exlog.data)
+                                                                nlow=int(form.nlong.data),nhigh=int(form.nshort.data),logspace=form.exlog.data)
 
             #create dictionary object for extrapolation species
             extrapolate_data = {'species' : 'extrapolation: '+ data['species'],

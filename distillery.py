@@ -179,7 +179,7 @@ def MaxwellGarnett(fracs,data_array):
 
   return wave,mg_n,mg_k
 
-def Extrapolation(species,wave_min=0.1,wave_max=1000.0,logspace=True):
+def Extrapolation(species,wave_min=0.1,wave_max=1000.0,nlow=100,nhigh=100,logspace=True):
   """Function to extrapolate given realities to cover the full range of
      a common, uniform wavelength grid."""
 
@@ -195,8 +195,10 @@ def Extrapolation(species,wave_min=0.1,wave_max=1000.0,logspace=True):
       print("Extrapolating to shorter wavelengths")
 
       if logspace == True : 
-        extra_wave = np.logspace(np.log10(0.9*wave_min),np.log10(wave[0]),num=100,base=10.0,endpoint=True)
-      
+        extra_wave = np.logspace(np.log10(0.9*wave_min),np.log10(wave[0]),num=nlow,base=10.0,endpoint=True)
+      else: 
+        extra_wave = np.linspace(0.9*wave_min,wave[0],num=nlow)
+
       slope_real = (real[1] - real[0]) / (wave[1] - wave[0])
       extra_real = real[0] + (slope_real * (extra_wave - wave[0]))
 
@@ -211,7 +213,9 @@ def Extrapolation(species,wave_min=0.1,wave_max=1000.0,logspace=True):
       print("Extrapolating to longer wavelengths")
 
       if logspace == True :
-        extra_wave = np.logspace(np.log10(wave[-1]),np.log10(1.1*wave_max),num=100,base=10.0,endpoint=True)
+        extra_wave = np.logspace(np.log10(wave[-1]),np.log10(1.1*wave_max),num=nhigh,base=10.0,endpoint=True)
+      else: 
+        extra_wave = np.linspace(wave[-1],1.1*wave_max,num=nhigh)
       
       slope_real = (real[-2] - real[-1]) / (wave[-2] - wave[-1])
       extra_real = real[-1] + (slope_real * (extra_wave - wave[-1]))
@@ -228,8 +232,10 @@ def Extrapolation(species,wave_min=0.1,wave_max=1000.0,logspace=True):
 
       #short wavelength part
       if logspace == True :
-        extra_wave_lo = np.logspace(np.log10(0.9*wave_min),np.log10(wave[0]),num=100,base=10.0,endpoint=True)
-      
+        extra_wave_lo = np.logspace(np.log10(0.9*wave_min),np.log10(wave[0]),num=nlow,base=10.0,endpoint=True)
+      else: 
+        extra_wave = np.linspace(0.9*wave_min,wave[0],num=nlow)
+
       slope_real_lo = (real[1] - real[0]) / (wave[1] - wave[0])
       extra_real_lo = real[0] + (slope_real_lo * (extra_wave_lo - wave[0]))
 
@@ -239,7 +245,9 @@ def Extrapolation(species,wave_min=0.1,wave_max=1000.0,logspace=True):
       #long wavelength part
       if logspace == True :
         extra_wave_hi = np.logspace(np.log10(wave[-1]),np.log10(1.1*wave_max),num=100,base=10.0,endpoint=True)
-      
+      else: 
+        extra_wave = np.linspace(wave[-1],1.1*wave_max,num=nhigh)
+
       slope_real_hi = (real[-2] - real[-1]) / (wave[-2] - wave[-1])
       extra_real_hi = real[-1] + (slope_real_hi * (extra_wave_hi - wave[-1]))
 
