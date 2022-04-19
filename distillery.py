@@ -2,6 +2,7 @@ import numpy as np
 import json
 import scipy.interpolate as intp
 from scipy import integrate
+from scipy.optimize import fsolve
 import scipy.fftpack as ft
 
 #To do list:
@@ -116,13 +117,42 @@ def kramers_kronig(data_array):
     return kk_l,kk_n, kk_k
 
 def Bruggeman(fracs,data_array):
-  print("Not yet implemented.")
+
+  wave = data_array[0]['wavelength']
+  eps_ = []
+  for i in range(0,len(data_array)):
+    eps_r = np.asarray(data_array[i]['n'])
+    eps_i = np.asarray(data_array[i]['k'])
+    elis = []
+    for j in range(0,len(wave)):
+      elis.append(complex(eps_r[j],eps_i[j]))
+    eps_.append(elis)
+
+  eps_ = np.asarray(eps_)
+
+  def BGSolve(eps_bg, eps_, fracs):
+    for i in range(0,len(fracs)):
+      bg_r,bg_i = eps_bg
+      BG = np.sum(fracs[i]*((eps_[i]**2 - (bg_r+bg_i*1.0j)**2)/(eps_[i]**2 + 2*(bg_r+bg_i*1.0j)**2)))
+
+      return (BG.real, BG.imag)
+
+  initial_guess = [1.0,0.0]
+  nn = []
+  kk = []
+  for j in range(0,len(wave)):
+    epsilons = []
+    for i in range(0,len(fracs)):
+      epsilons.append(eps_[i][j])
+    bg_n, bg_k = fsolve(BGSolve, initial_guess, args=(epsilons, fracs))
+
+    nn.append(bg_n)
+    kk.append(bg_k)
 
   return wave,nn,kk
 
 def MaxwellGarnett(fracs,data_array):
   #matrix is the larger of the two volume fractions
-  print(fracs, np.argmax(np.asarray(fracs)))
   wave = data_array[np.argmax(fracs)]['wavelength']
   nm = data_array[np.argmax(fracs)]['n']
   km = data_array[np.argmax(fracs)]['k']
@@ -144,12 +174,8 @@ def MaxwellGarnett(fracs,data_array):
 
   epse = epsm * ( (2*di*(epsi - epsm) + epsi + 2*epsm) / (2*epsm + epsi - di*(epsi - epsm)) )
 
-  print(epse)
-
   mg_n = epse.real
   mg_k = epse.imag
-
-  print(wave,mg_n,mg_k)
 
   return wave,mg_n,mg_k
 
