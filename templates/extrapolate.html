@@ -17,18 +17,17 @@
 
 <section>
   <h2>Output</h2>
+
 {% if extrapolate_plot != None %}
 <img src="data:image/svg+xml;base64, {{ extrapolate_plot }}" alt="Plot of wavelength vs. optical constants n,k extrapolated from raw data">
+{% endif %}
 
 {% if filename != None %}
-
 <form action={{ url_for('download_file',name=filename) }}>
     <input type="submit" value="Download extrapolated data" />
 </form>
-
 {% endif %}
 
-{% endif %}
   </section>
 
 

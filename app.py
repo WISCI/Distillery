@@ -192,14 +192,28 @@ def extrapolate():
             else:
                 kind = 'log'
 
-            distillery.Extrapolation(data,wave_min=form.wmin.data,wave_max=form.wmax.data)
+            extra_w, extra_n, extra_k = distillery.Extrapolation(data,wave_min=form.wmin.data,wave_max=form.wmax.data,
+                                                                logspace=form.exlog.data)
+
+            #create dictionary object for extrapolation species
+            extrapolate_data = {'species' : 'extrapolation: '+ data['species'],
+                       'formula' : data['formula'],
+                       'wavelength' : extra_w,
+                       'n' : extra_n,
+                       'k' : extra_k, 
+                       'density' : data['density'],
+                       'temperature' : data['temperature'],
+                       'stype' : data['stype'],
+                       'origin' : 'CALCULATION',
+                       'citation' : 'WISCI Distillery ; '+data['citation'] }
 
             img = io.BytesIO()
-    
             x = np.arange(10)
             plt.title(optcons[np.int32(form.optc.data)].split("/")[-1].split(".")[0])
-            plt.plot(data['wavelength'],data['n'],"-k",label="$n$")
-            plt.plot(data['wavelength'],data['k'],"-r",label="$k$")
+            plt.plot(data['wavelength'],np.asarray(data['n'])+0.1,":k",label=r"$n_{orig}$ + 0.1")
+            plt.plot(data['wavelength'],np.asarray(data['k'])+0.1,":r",label=r"$k_{orig}$ + 0.1")
+            plt.plot(extrapolate_data['wavelength'],extrapolate_data['n'],"-k",label=r"$n$")
+            plt.plot(extrapolate_data['wavelength'],extrapolate_data['k'],"-r",label=r"$k$")
             plt.xlabel(r"Wavelength ($\mu$m)")
             plt.ylabel(r"Refractive indices $n$,$k$")
             #print(form.ylog.data)
@@ -215,7 +229,8 @@ def extrapolate():
             file_uuid = str(uuid.uuid4())
             filename="distillery_"+file_uuid+".csv"
             np.savetxt("./static/client/"+filename,np.c_[data['wavelength'],data['n'],data['k']])
-            return render_template('extrapolate.html', plot_url=extrapolate_plot,form=form,
+            message = None
+            return render_template('extrapolate.html', extrapolate_plot=extrapolate_plot,form=form,
                                     values=extrapolate_data,message=message,
                                     filename=filename)
         else:
