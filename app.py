@@ -138,8 +138,7 @@ def plot():
             # magic data reduction and calculations take place here
 
             img = io.BytesIO()
-    
-            x = np.arange(10)
+            
             plt.title(optcons[np.int32(form.optc.data)].split("/")[-1].split(".")[0])
             plt.plot(data['wavelength'],data['n'],"-k",label="$n$")
             plt.plot(data['wavelength'],data['k'],"-r",label="$k$")
@@ -208,7 +207,7 @@ def extrapolate():
                        'citation' : 'WISCI Distillery ; '+data['citation'] }
 
             img = io.BytesIO()
-            x = np.arange(10)
+            
             plt.title(optcons[np.int32(form.optc.data)].split("/")[-1].split(".")[0])
             plt.plot(data['wavelength'],np.asarray(data['n'])+0.1,":k",label=r"$n_{orig}$ + 0.1")
             plt.plot(data['wavelength'],np.asarray(data['k'])+0.1,":r",label=r"$k_{orig}$ + 0.1")
@@ -287,8 +286,7 @@ def mixing():
                 density += data['density']*fracs[i]
 
                 img = io.BytesIO()
-    
-                x = np.arange(10)
+
                 plt.title(species[i])
                 plt.plot(data['wavelength'],data['n'],"-k",label="$n$")
                 plt.plot(data['wavelength'],data['k'],"-r",label="$k$")
@@ -332,7 +330,6 @@ def mixing():
             #plot for mixture
             img = io.BytesIO()
             
-            x = np.arange(10)
             plt.title("mixture: "+composition_string)
             plt.plot(mixture['wavelength'],mixture['n'],"-k",label="$n$")
             plt.plot(mixture['wavelength'],mixture['k'],"-r",label="$k$")

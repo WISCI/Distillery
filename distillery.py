@@ -130,14 +130,16 @@ def Bruggeman(fracs,data_array):
 
   eps_ = np.asarray(eps_)
 
-  def BGSolve(eps_bg, eps_, fracs):
-    for i in range(0,len(fracs)):
-      bg_r,bg_i = eps_bg
-      BG = np.sum(fracs[i]*((eps_[i]**2 - (bg_r+bg_i*1.0j)**2)/(eps_[i]**2 + 2*(bg_r+bg_i*1.0j)**2)))
+  def BGSolve(eps_bg, epsilons, fracs):
+    bg_r,bg_i = eps_bg
 
-      return (BG.real, BG.imag)
+    BG = 0.0
+    for i in range(0,len(epsilons)):
+      BG += np.sum(fracs[i]*((epsilons[i]**2 - complex(bg_r,bg_i)**2)/(epsilons[i]**2 + 2* complex(bg_r,bg_i)**2)))
 
-  initial_guess = [1.0,0.0]
+    return (BG.real, BG.imag)
+
+  initial_guess = [1.5,0.0]
   nn = []
   kk = []
   for j in range(0,len(wave)):
@@ -145,7 +147,8 @@ def Bruggeman(fracs,data_array):
     for i in range(0,len(fracs)):
       epsilons.append(eps_[i][j])
     bg_n, bg_k = fsolve(BGSolve, initial_guess, args=(epsilons, fracs))
-
+    print(complex(bg_n,bg_k),epsilons[0],epsilons[1])
+    del epsilons
     nn.append(bg_n)
     kk.append(bg_k)
 
