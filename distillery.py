@@ -147,7 +147,6 @@ def Bruggeman(fracs,data_array):
     for i in range(0,len(fracs)):
       epsilons.append(eps_[i][j])
     bg_n, bg_k = fsolve(BGSolve, initial_guess, args=(epsilons, fracs))
-    print(complex(bg_n,bg_k),epsilons[0],epsilons[1])
     del epsilons
     nn.append(bg_n)
     kk.append(bg_k)
