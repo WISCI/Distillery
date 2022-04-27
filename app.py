@@ -137,21 +137,9 @@ def plot():
 
             # magic data reduction and calculations take place here
 
-            img = io.BytesIO()
-            
-            plt.title(optcons[np.int32(form.optc.data)].split("/")[-1].split(".")[0])
-            plt.plot(data['wavelength'],data['n'],"-k",label="$n$")
-            plt.plot(data['wavelength'],data['k'],"-r",label="$k$")
-            plt.xlabel(r"Wavelength ($\mu$m)")
-            plt.ylabel(r"Refractive indices $n$,$k$")
-            #print(form.ylog.data)
-            if form.ylog.data == True:
-                plt.yscale("log")
-            plt.xscale("log")
-            plt.legend()
-            plt.savefig(img, format='svg')
-            plt.close()
+            img = distillery.PlotData(data,title=optcons[np.int32(form.optc.data)].split("/")[-1].split(".")[0],ylog=form.ylog.data)
             img.seek(0)
+
             plot_url = base64.b64encode(img.getvalue()).decode('utf8')
 
             if form.savedata.data == True:
@@ -206,23 +194,9 @@ def extrapolate():
                        'origin' : 'CALCULATION',
                        'citation' : 'WISCI Distillery ; '+data['citation'] }
 
-            img = io.BytesIO()
-            
-            plt.title(optcons[np.int32(form.optc.data)].split("/")[-1].split(".")[0])
-            plt.plot(data['wavelength'],np.asarray(data['n'])+0.1,":k",label=r"$n_{orig}$ + 0.1")
-            plt.plot(data['wavelength'],np.asarray(data['k'])+0.1,":r",label=r"$k_{orig}$ + 0.1")
-            plt.plot(extrapolate_data['wavelength'],extrapolate_data['n'],"-k",label=r"$n$")
-            plt.plot(extrapolate_data['wavelength'],extrapolate_data['k'],"-r",label=r"$k$")
-            plt.xlabel(r"Wavelength ($\mu$m)")
-            plt.ylabel(r"Refractive indices $n$,$k$")
-            #print(form.ylog.data)
-            if form.ylog.data == True:
-                plt.yscale("log")
-            plt.xscale("log")
-            plt.legend()
-            plt.savefig(img, format='svg')
-            plt.close()
+            img = distillery.PlotData(extrapolate_data,title=optcons[np.int32(form.optc.data)].split("/")[-1].split(".")[0],ylog=form.ylog.data)
             img.seek(0)
+
             extrapolate_plot = base64.b64encode(img.getvalue()).decode('utf8')
 
             file_uuid = str(uuid.uuid4())
@@ -285,20 +259,7 @@ def mixing():
                 data = data_array[i]
                 density += data['density']*fracs[i]
 
-                img = io.BytesIO()
-
-                plt.title(species[i])
-                plt.plot(data['wavelength'],data['n'],"-k",label="$n$")
-                plt.plot(data['wavelength'],data['k'],"-r",label="$k$")
-                plt.xlabel(r"Wavelength ($\mu$m)")
-                plt.ylabel(r"Refractive indices $n$,$k$")
-                #print(form.ylog.data)
-                if form.ylog.data == True:
-                    plt.yscale("log")
-                plt.xscale("log")
-                plt.legend()
-                plt.savefig(img, format='svg')
-                plt.close()
+                img = distillery.PlotData(data,title=optcons[np.int32(form.optc.data)].split("/")[-1].split(".")[0],ylog=form.ylog.data)
                 img.seek(0)
 
                 plot_urls.append(base64.b64encode(img.getvalue()).decode('utf8'))
@@ -328,20 +289,7 @@ def mixing():
                        'citation' : 'WISCI Distillery' }
 
             #plot for mixture
-            img = io.BytesIO()
-            
-            plt.title("mixture: "+composition_string)
-            plt.plot(mixture['wavelength'],mixture['n'],"-k",label="$n$")
-            plt.plot(mixture['wavelength'],mixture['k'],"-r",label="$k$")
-            plt.xlabel(r"Wavelength ($\mu$m)")
-            plt.ylabel(r"Refractive indices $n$,$k$")
-            #print(form.ylog.data)
-            if form.ylog.data == True:
-                plt.yscale("log")
-            plt.xscale("log")
-            plt.legend()
-            plt.savefig(img, format='svg')
-            plt.close()
+            img = distillery.PlotData(mixture,title="mixture: "+composition_string,ylog=form.ylog.data)
             img.seek(0)
             plot_mixture = base64.b64encode(img.getvalue()).decode('utf8')
 

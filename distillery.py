@@ -4,6 +4,7 @@ import scipy.interpolate as intp
 from scipy import integrate
 from scipy.optimize import fsolve
 import scipy.fftpack as ft
+import matplotlib.pyplot as plt
 
 #To do list:
 # Support plotting
@@ -71,6 +72,25 @@ def WriteJSON(mydict):
 #
 # Here we define the functions that manipulate the optical constants
 #
+def PlotData(data,title=None,ylog=False,*args,**kwargs):
+
+  img = io.BytesIO()
+         
+  plt.title(title)
+  plt.plot(data['wavelength'],data['n'],"-k",label="$n$")
+  plt.plot(data['wavelength'],data['k'],"-r",label="$k$")
+  plt.xlabel(r"Wavelength ($\mu$m)")
+  plt.ylabel(r"Refractive indices $n$,$k$")
+  #print(form.ylog.data)
+  if ylog == True:
+      plt.yscale("log")
+  plt.xscale("log")
+  plt.legend()
+  plt.savefig(img, format='svg')
+  plt.close()
+
+  return img
+
 def KramersKronig(data_array):
 
     for i in range(0,len(data_array)):
