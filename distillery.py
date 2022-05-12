@@ -73,13 +73,16 @@ def WriteJSON(mydict):
 #
 # Here we define the functions that manipulate the optical constants
 #
-def PlotData(data,title=None,ylog=False,*args,**kwargs):
+def PlotData(plotdata,title=None,ylog=False,original=None,*args,**kwargs):
 
   img = io.BytesIO()
          
   plt.title(title)
-  plt.plot(data['wavelength'],data['n'],"-k",label="$n$")
-  plt.plot(data['wavelength'],data['k'],"-r",label="$k$")
+  plt.plot(plotdata['wavelength'],plotdata['n'],"-k",label=r"$n_{\rm extr}$")
+  plt.plot(plotdata['wavelength'],plotdata['k'],"-r",label=r"$k_{\rm extr}$")
+  if original != None:
+    plt.plot(original['wavelength'],np.asarray(original['n'])+0.05,":k",label=r"$n_{\rm orig} + 0.05$")
+    plt.plot(original['wavelength'],np.asarray(original['k'])+0.05,":r",label=r"$k_{\rm orig} + 0.05$")  
   plt.xlabel(r"Wavelength ($\mu$m)")
   plt.ylabel(r"Refractive indices $n$,$k$")
   #print(form.ylog.data)

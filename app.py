@@ -194,7 +194,7 @@ def extrapolate():
                        'origin' : 'CALCULATION',
                        'citation' : 'WISCI Distillery ; '+data['citation'] }
 
-            img = distillery.PlotData(extrapolate_data,title=optcons[np.int32(form.optc.data)].split("/")[-1].split(".")[0],ylog=form.ylog.data)
+            img = distillery.PlotData(extrapolate_data,title=optcons[np.int32(form.optc.data)].split("/")[-1].split(".")[0],ylog=form.ylog.data,original=data)
             img.seek(0)
 
             extrapolate_plot = base64.b64encode(img.getvalue()).decode('utf8')
