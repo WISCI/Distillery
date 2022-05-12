@@ -255,11 +255,16 @@ def mixing():
             # magic data reduction and calculations take place here
             plot_urls=[]
             density = 0.0
+
+            composition_string = ""
+            for i in range(0,nspecies):
+                composition_string += str(fracs[i])+"x "+species[i]+" "
+
             for i in range(0,nspecies):
                 data = data_array[i]
                 density += data['density']*fracs[i]
 
-                img = distillery.PlotData(data,title=optcons[np.int32(form.optc.data)].split("/")[-1].split(".")[0],ylog=form.ylog.data)
+                img = distillery.PlotData(data,title=species[i],ylog=form.ylog.data)
                 img.seek(0)
 
                 plot_urls.append(base64.b64encode(img.getvalue()).decode('utf8'))
@@ -270,11 +275,6 @@ def mixing():
 
             elif form.mixrule.data == 'MaxwellGarnett' :
                 out_l,out_n,out_k = distillery.MaxwellGarnett(fracs,data_array)
-
-            print(species)
-            composition_string = ""
-            for i in range(0,nspecies):
-                composition_string += str(fracs[i])+"x "+species[i]+" "
 
             #create dictionary object for mixture species
             mixture = {'species' : 'mixture: '+composition_string,

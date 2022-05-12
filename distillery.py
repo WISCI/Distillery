@@ -168,7 +168,7 @@ def Bruggeman(fracs,data_array):
     for i in range(0,len(fracs)):
       epsilons.append(eps_[i][j])
     bg_n, bg_k = fsolve(BGSolve, initial_guess, args=(epsilons, fracs))
-    del epsilons
+
     nn.append(bg_n)
     kk.append(bg_k)
 
@@ -210,47 +210,11 @@ def Extrapolation(species,wave_min=0.1,wave_max=1000.0,nlow=100,nhigh=100,logspa
   real = species['n']
   imag = species['k']
 
-  if wave_min < np.min(wave) and wave_max > np.max(wave):
+  if wave_min > np.min(wave) and wave_max < np.max(wave):
       print(species['species']," reality spectrum within bounds, no extrapolation required.")
       extrap_wave, extrap_real, extrap_imag = wave, real, imag
 
-  if wave_min < np.min(wave) and wave_max <= np.max(wave):
-      print("Extrapolating to shorter wavelengths")
-
-      if logspace == True : 
-        extra_wave = np.logspace(np.log10(0.9*wave_min),np.log10(wave[0]),num=nlow,base=10.0,endpoint=True)
-      else: 
-        extra_wave = np.linspace(0.9*wave_min,wave[0],num=nlow)
-
-      slope_real = (real[1] - real[0]) / (wave[1] - wave[0])
-      extra_real = real[0] + (slope_real * (extra_wave - wave[0]))
-
-      slope_imag = (imag[1] - imag[0]) / (wave[1] - wave[0])
-      extra_imag = imag[0] + (slope_imag * (extra_wave - wave[0]))
-
-      extrap_wave = np.append(extra_wave,wave[1:])
-      extrap_real = np.append(extra_real,real[1:])
-      extrap_imag = np.append(extra_imag,imag[1:])
-  
-  if wave_max > np.max(wave) and wave_min >= np.min(wave): 
-      print("Extrapolating to longer wavelengths")
-
-      if logspace == True :
-        extra_wave = np.logspace(np.log10(wave[-1]),np.log10(1.1*wave_max),num=nhigh,base=10.0,endpoint=True)
-      else: 
-        extra_wave = np.linspace(wave[-1],1.1*wave_max,num=nhigh)
-      
-      slope_real = (real[-2] - real[-1]) / (wave[-2] - wave[-1])
-      extra_real = real[-1] + (slope_real * (extra_wave - wave[-1]))
-
-      slope_imag = (imag[-2] - imag[-1]) / (wave[-2] - wave[-1])
-      extra_imag = imag[-1] + (slope_imag * (wave[-1] - extra_wave))
-
-      extrap_wave = np.append(wave,extra_wave[1:])
-      extrap_real = np.append(real,extra_real[1:])
-      extrap_imag = np.append(imag,extra_imag[1:])
-
-  if wave_min < np.min(wave) and wave_max > np.max(wave):
+  elif wave_min < np.min(wave) and wave_max > np.max(wave):
       print("Extrapolating to both shorter and longer wavelengths")
 
       #short wavelength part
@@ -267,7 +231,7 @@ def Extrapolation(species,wave_min=0.1,wave_max=1000.0,nlow=100,nhigh=100,logspa
 
       #long wavelength part
       if logspace == True :
-        extra_wave_hi = np.logspace(np.log10(wave[-1]),np.log10(1.1*wave_max),num=100,base=10.0,endpoint=True)
+        extra_wave_hi = np.logspace(np.log10(wave[-1]),np.log10(1.1*wave_max),num=nhigh,base=10.0,endpoint=True)
       else: 
         extra_wave_hi = np.linspace(wave[-1],1.1*wave_max,num=nhigh)
 
@@ -285,6 +249,42 @@ def Extrapolation(species,wave_min=0.1,wave_max=1000.0,nlow=100,nhigh=100,logspa
       extrap_wave = np.append(wave_mid,extra_wave_hi[1:])
       extrap_real = np.append(real_mid,extra_real_hi[1:])
       extrap_imag = np.append(imag_mid,extra_imag_hi[1:])
+
+  elif wave_min < np.min(wave) and wave_max <= np.max(wave):
+      print("Extrapolating to shorter wavelengths")
+
+      if logspace == True : 
+        extra_wave = np.logspace(np.log10(0.9*wave_min),np.log10(wave[0]),num=nlow,base=10.0,endpoint=True)
+      else: 
+        extra_wave = np.linspace(0.9*wave_min,wave[0],num=nlow)
+
+      slope_real = (real[1] - real[0]) / (wave[1] - wave[0])
+      extra_real = real[0] + (slope_real * (extra_wave - wave[0]))
+
+      slope_imag = (imag[1] - imag[0]) / (wave[1] - wave[0])
+      extra_imag = imag[0] + (slope_imag * (extra_wave - wave[0]))
+
+      extrap_wave = np.append(extra_wave,wave[1:])
+      extrap_real = np.append(extra_real,real[1:])
+      extrap_imag = np.append(extra_imag,imag[1:])
+  
+  elif wave_max > np.max(wave) and wave_min >= np.min(wave): 
+      print("Extrapolating to longer wavelengths")
+
+      if logspace == True :
+        extra_wave = np.logspace(np.log10(wave[-1]),np.log10(1.1*wave_max),num=nhigh,base=10.0,endpoint=True)
+      else: 
+        extra_wave = np.linspace(wave[-1],1.1*wave_max,num=nhigh)
+      
+      slope_real = (real[-2] - real[-1]) / (wave[-2] - wave[-1])
+      extra_real = real[-1] + (slope_real * (extra_wave - wave[-1]))
+
+      slope_imag = (imag[-2] - imag[-1]) / (wave[-2] - wave[-1])
+      extra_imag = imag[-1] + (slope_imag * (wave[-1] - extra_wave))
+
+      extrap_wave = np.append(wave,extra_wave[1:])
+      extrap_real = np.append(real,extra_real[1:])
+      extrap_imag = np.append(imag,extra_imag[1:])
       
   return extrap_wave, extrap_real, extrap_imag
 
