@@ -6,7 +6,6 @@ import numpy as np
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
 import matplotlib
-import uuid
 import matplotlib.pyplot as plt
 import glob
 import json
@@ -53,7 +52,7 @@ class ExtrapolateForm(Form):
     nlong=FloatField(label="Number of extrapolated data points at longer wavelengths", default=100,validators=[validators.NumberRange(min=2,max=1000,message="Number outside of bounds 2<=f<=1000")])
     nshort=FloatField(label="Number of extrapolated data points at shorter wavelengths", default=100,validators=[validators.NumberRange(min=2,max=1000,message="Number outside of bounds 2<=f<=1000")])    
     exlog= BooleanField(label="Extrapolate in Log space",default="")
-    #savedata= BooleanField(label="Make raw data available for download",render_kw={'checked': False})
+    savedata= BooleanField(label="Make raw data available for download",render_kw={'checked': False})
     ylog= BooleanField(label="Log Y-axis",default="")
 
 
@@ -143,9 +142,7 @@ def plot():
             plot_url = base64.b64encode(img.getvalue()).decode('utf8')
 
             if form.savedata.data == True:
-                file_uuid = str(uuid.uuid4())
-                filename="distillery_"+file_uuid+".csv"
-                np.savetxt("./static/client/"+filename,np.c_[data['wavelength'],data['n'],data['k']])
+                filename = distillery.WriteFile(data)
             else:
                 filename=None
             return render_template('plot.html', plot_url=plot_url,form=form,
@@ -198,10 +195,8 @@ def extrapolate():
             img.seek(0)
 
             extrapolate_plot = base64.b64encode(img.getvalue()).decode('utf8')
-
-            file_uuid = str(uuid.uuid4())
-            filename="distillery_"+file_uuid+".csv"
-            np.savetxt("./static/client/"+filename,np.c_[data['wavelength'],data['n'],data['k']])
+            if form.savedata.data == True:
+                filename = distillery.WriteFile(extrapolate_data)
             message = None
             return render_template('extrapolate.html', extrapolate_plot=extrapolate_plot,form=form,
                                     values=extrapolate_data,message=message,
@@ -294,9 +289,7 @@ def mixing():
             plot_mixture = base64.b64encode(img.getvalue()).decode('utf8')
 
             if form.savedata.data == True:
-                file_uuid = str(uuid.uuid4())
-                filename="distillery_"+file_uuid+".csv"
-                np.savetxt("./static/client/"+filename,np.c_[data['wavelength'],data['n'],data['k']])
+                filename = distillery.WriteFile(mixture)
             else: 
                 filename=None
             return render_template('mixing.html', plot_urls=plot_urls,form=form,

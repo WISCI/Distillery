@@ -6,7 +6,7 @@ from scipy import integrate
 from scipy.optimize import fsolve
 import scipy.fftpack as ft
 import matplotlib.pyplot as plt
-
+import uuid
 #To do list:
 # Support plotting
 # Support Flask + Plotly for dynamic website
@@ -70,6 +70,24 @@ def WriteJSON(mydict):
     with open('./json/'+mydict['species']+'.json', 'w') as payload:
         json.dump(mydict, payload)
 
+def WriteFile(data):
+#function to write a plain txt file based on input data
+    file_uuid = str(uuid.uuid4())
+    filename="distillery_"+file_uuid+".csv"
+    header  = 'Species: ' + data['species'] + '\n' 
+    header += 'Temperature: ' + str(data['temperature']) + '\n' 
+    header += 'Density: ' + str(data['density']) + '\n' 
+    header += 'Formula: ' + data['formula'] + '\n'
+    header += 'Type: ' + data['stype'] + '\n'
+    header += 'Origin: ' + data['origin'] +'\n'
+    header += 'Citations: ' +  data['citation'] + '\n'
+    header += 'Wavelength in microns' + '\n'
+    header += '  wav     n      k   ' + '\n'
+    header += '#####################'
+    np.savetxt("./static/client/"+filename,np.c_[data['wavelength'],data['n'],data['k']],\
+               header=header,fmt='%.5f')
+
+    return filename
 #
 # Here we define the functions that manipulate the optical constants
 #
