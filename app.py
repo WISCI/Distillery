@@ -62,8 +62,6 @@ class MixingForm(Form):
     listopt=[]
     for i_optcon,optcon in enumerate(optcons):
         listopt.append((i_optcon,optcon.split("/")[-1].split(".")[0]))
-    #Add vacuum to list of choices for porosity calculations
-    listopt.append((i_optcon+1,'vacuum'))
     print(listopt)
     listmix = ['Bruggeman','MaxwellGarnett']
     optc1=SelectField("1st Species",choices=listopt)
