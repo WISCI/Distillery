@@ -28,9 +28,9 @@ class PlotForm(Form):
     print(listopt)
    
     optc=SelectField("Species",choices=listopt)
-    options_sil=SelectMultipleField("Select Silicates (unused)",choices=listopt)
-    options_car=SelectMultipleField("Select Carbons (unused)",choices=listopt)
-    options_ice=SelectMultipleField("Select Ices (unused)",choices=listopt)
+    #options_sil=SelectMultipleField("Select Silicates (unused)",choices=listopt)
+    #options_car=SelectMultipleField("Select Carbons (unused)",choices=listopt)
+    #options_ice=SelectMultipleField("Select Ices (unused)",choices=listopt)
     savedata= BooleanField(label="Make raw data available for download",render_kw={'checked': False})
     ylog= BooleanField(label="Log Y-axis",default="")
 
