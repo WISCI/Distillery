@@ -7,6 +7,9 @@ from scipy.optimize import fsolve
 import scipy.fftpack as ft
 import matplotlib.pyplot as plt
 import uuid
+import os
+from astropy.io import ascii
+
 #To do list:
 # Support plotting
 # Support Flask + Plotly for dynamic website
@@ -222,6 +225,51 @@ def MaxwellGarnett(fracs,data_array):
   mg_k = epse.imag
 
   return wave,mg_n,mg_k
+
+def OpTool(commands):
+  """Function to combine and extrapolate optical constants for materials using optool
+  """
+
+  wmin = commands['wmin']
+  wmax = commands['wmax']
+  wave_string = " -l "+str(wmin)+" "+str(wmax)+" -fmax 0"
+
+
+  methodrule = commands['methodrule']
+  monomer = commands['monomer']
+  fmax = commands['fillfac']
+  if methodrule == 'Distribution of Hollow Spheres':
+    meth_string = ' -dhs '+str(fmax)+' '
+  if methodrule == 'Modified Mean Field':
+    meth_string = ' -mmf '+str(monomer)+' '+str(fmax)+' '
+  if methodrule == 'Mie':
+    meth_string = ' -mie ' # == -dhs 0 
+  if methodrule == 'Continuous Distribution of Ellipsoids':
+    meth_string = ' -cde '
+
+  distrirule = commands['distrirule']
+  amin = commands['amin']
+  amax = commands['amax']
+  if distrirule == 'Power Law':
+    apow = commands['apow']
+    dist_string = '-a '+str(amin)+' '+str(amax)+' '+str(apow)+' '
+  elif distrirule == 'Log-Normal':
+    apek = commands['apow']
+    asig = commands['apow']
+    dist_string = '-a '+str(amin)+' '+str(amax)+' '+str(apek)+' '+str(asig)+' '
+
+  #Execute optool command
+  composition = commands['direc']+commands['optc1'] +' '+str(commands['frac1'])+' '+commands['direc']+commands['optc2'] +' '+str(commands['frac2'])+' '
+  os.system("optool "+composition+ meth_string+ dist_string+ wave_string)
+
+  #Read in dustkappa.dat
+  optconst = ascii.read(commands['direc']+"dustkappa.dat",comment="#",data_start=2) 
+
+  wavelength = optconst["col1"].data
+  qabs = optconst["col2"].data
+  qsca = optconst["col3"].data
+
+  return wavelength, qabs, qsca
 
 def Extrapolation(species,wave_min=0.1,wave_max=1000.0,nlow=100,nhigh=100,logspace=True):
   """Function to extrapolate given realities to cover the full range of

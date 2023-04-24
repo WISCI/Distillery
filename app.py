@@ -20,7 +20,7 @@ matplotlib.use('Agg')
 # Here we define the input forms for each page on the site
 #
 class PlotForm(Form):
-    optcons=glob.glob("./static/opticalconstants/*")
+    optcons=glob.glob("./static/opticalconstants/json/*")
     optcons.sort()
     listopt=[]
     for i_optcon,optcon in enumerate(optcons):
@@ -36,7 +36,7 @@ class PlotForm(Form):
 
 
 class ExtrapolateForm(Form):
-    optcons=glob.glob("./static/opticalconstants/*")
+    optcons=glob.glob("./static/opticalconstants/json/*")
     optcons.sort()
     listopt=[]
     for i_optcon,optcon in enumerate(optcons):
@@ -57,7 +57,7 @@ class ExtrapolateForm(Form):
 
 
 class MixingForm(Form):
-    optcons=glob.glob("./static/opticalconstants/*")
+    optcons=glob.glob("./static/opticalconstants/json/*")
     optcons.sort()
     listopt=[]
     for i_optcon,optcon in enumerate(optcons):
@@ -74,6 +74,39 @@ class MixingForm(Form):
     savedata= BooleanField(label="Make output data available for download",render_kw={'checked': True})
     ylog= BooleanField(label="Log Y-axis",default="")
 
+
+class MixingOpToolForm(Form):
+    optcons=glob.glob("./static/opticalconstants/lnk/*")
+    optcons.sort()
+    listopt=[]
+    for i_optcon,optcon in enumerate(optcons):
+        listopt.append((i_optcon,optcon.split("/")[-1].split(".")[0]))
+    print(listopt)
+    listmethod = ['Distribution of Hollow Spheres','Modified Mean Field','Mie','Continuous Distribution of Ellipsoids']
+    listdistri = ['Power Law','Log-Normal']
+    
+    wmin=FloatField(label="Shortest wavelength for extrapolated values (um)", default=0.1,validators=[validators.NumberRange(min=0.01,max=10000,message="Number outside of bounds 0.01<=f<=10000")])
+    wmax=FloatField(label="Longest wavelength for extrapolated values (um)", default=1000.0,validators=[validators.NumberRange(min=0.01,max=10000,message="Number outside of bounds 0.01<=f<=10000")])   
+
+    optc1=SelectField("1st Species",choices=listopt)
+    frac1=FloatField(label="Fraction", default=0.5,validators=[validators.NumberRange(min=0,max=1,message="Fraction outside of bounds 0<=f<=1")])
+    optc2=SelectField("2nd Species",choices=listopt,default=2)
+    frac2=FloatField(label="Fraction", default=0.5,validators=[validators.NumberRange(min=0,max=1,message="Fraction outside of bounds 0<=f<=1")])
+    
+    methodrule = SelectField("Grain geometry:",choices=listmethod)
+    
+    monomer = FloatField(label="Monomer size (um)", default=0.1,validators=[validators.NumberRange(min=0,max=1,message="Value outside of bounds 0<=f<=1")])
+    fillfac = FloatField(label="Fill Fraction", default=0.5,validators=[validators.NumberRange(min=0,max=1,message="Value outside of bounds 0<=f<=1")])
+
+    distrirule = SelectField("Size distribution",choices=listdistri)
+
+    amin = FloatField(label="Minimum size (um)", default=0.1,validators=[validators.NumberRange(min=1e-3,max=1e6,message="Value outside of bounds 1e-3 to 1e6")])
+    amax = FloatField(label="Maximum size (um)", default=1e3,validators=[validators.NumberRange(min=1e-3,max=1e6,message="Value outside of bounds 1e-3 to 1e6")])
+    apow = FloatField(label="Power law exponent/Standard deviation of sizes (um)*", default=3.5,validators=[validators.NumberRange(min=1e-3,max=1e6,message="Value outside of bounds 1e-3 to 1e6")])
+    asig = FloatField(label="Standard deviation of sizes (um)*", default=0.5,validators=[validators.NumberRange(min=1e-3,max=1e6,message="Value outside of bounds 1e-3 to 1e6")])
+
+    savedata= BooleanField(label="Make output data available for download",render_kw={'checked': True})
+    ylog= BooleanField(label="Log Y-axis",default="")
 
 def extend():
     print("Not yet implemented!")
@@ -122,7 +155,7 @@ def plot():
     #try:
         form=PlotForm(request.form)
         if request.method == 'POST' and form.validate():
-            optcons=glob.glob("./static/opticalconstants/*")
+            optcons=glob.glob("./static/opticalconstants/json/*")
             optcons.sort()
             #print("form data?",np.int32(form.optc.data))
             #print(optcons[np.int32(form.optc.data)])
@@ -162,7 +195,7 @@ def extrapolate():
     #try:
         form=ExtrapolateForm(request.form)
         if request.method == 'POST' and form.validate():
-            optcons=glob.glob("./static/opticalconstants/*")
+            optcons=glob.glob("./static/opticalconstants/json/*")
             optcons.sort()
             
             with open(optcons[np.int32(form.optc.data)]) as datafile:
@@ -214,12 +247,18 @@ def mixing():
     #try:
         form=MixingForm(request.form)
         if request.method == 'POST' and form.validate():
-            optcons=glob.glob("./static/opticalconstants/*")
+            optcons=glob.glob("./static/opticalconstants/json/*")
             optcons.sort()
             
             #sort out which species and how many in what order:
             if np.sum(form.frac1.data + form.frac2.data + form.frac3.data) == 0.0 :
                 return render_template('err.html',page='Mixing',error="Sum of fractions cannot be zero.")
+
+            if np.sum(form.frac1.data + form.frac2.data + form.frac3.data) != 1.0 : #normalise to unity
+                frac_sum = form.frac1.data + form.frac2.data + form.frac3.data
+                form.frac1.data /= frac_sum
+                form.frac2.data /= frac_sum
+                form.frac3.data /= frac_sum
 
             if form.frac1.data == 0.0:
                 return render_template('err.html',page='Mixing',error="First species fraction cannot be zero.")
@@ -268,6 +307,76 @@ def mixing():
 
             elif form.mixrule.data == 'MaxwellGarnett' :
                 out_l,out_n,out_k = distillery.MaxwellGarnett(fracs,data_array)
+
+            #create dictionary object for mixture species
+            mixture = {'species' : 'mixture: '+composition_string,
+                       'formula' : 'N/A',
+                       'wavelength' : out_l,
+                       'n' : out_n,
+                       'k' : out_k, 
+                       'density' : str(density),
+                       'temperature' : 'N/A',
+                       'stype' : 'N/A',
+                       'origin' : 'CALCULATION',
+                       'citation' : 'WISCI Distillery' }
+
+            #plot for mixture
+            img = distillery.PlotData(mixture,title="mixture: "+composition_string,ylog=form.ylog.data)
+            img.seek(0)
+            plot_mixture = base64.b64encode(img.getvalue()).decode('utf8')
+
+            if form.savedata.data == True:
+                filename = distillery.WriteFile(mixture)
+            else: 
+                filename=None
+            return render_template('mixing.html', plot_urls=plot_urls,form=form,
+                                    values=data_array,mixture=mixture,plot_urlm=plot_mixture,
+                                    filename=filename)
+
+        else:
+            plot_urls=None
+            filename=None
+            data_array=None
+            mixture=None
+            plot_mixture=None
+            return render_template('mixing.html', plot_urls=plot_urls,form=form,
+                                    values=data_array,mixture=mixture,plot_urlm=plot_mixture,
+                                    filename=filename)
+
+@app.route('/calculating',methods=['GET','POST'])
+def calculating():
+    if True:
+    #try:
+        form=MixingOpToolForm(request.form)
+        if request.method == 'POST' and form.validate():
+            optcons=glob.glob("./static/opticalconstants/lnk/*.lnk")
+            optcons.sort()
+            
+            #sort out which species and how many in what order:
+            if np.sum(form.frac1.data + form.frac2.data) == 0.0 :
+                return render_template('err.html',page='Mixing',error="Sum of fractions cannot be zero.")
+
+            if form.frac1.data == 0.0:
+                return render_template('err.html',page='Mixing',error="First species fraction cannot be zero.")
+
+            optool_inputs = {'direc':"./static/opticalconstants/lnk/",
+                             'wmin':form.wmin.data,
+                             'wmax':form.wmax.data,
+                             'optc1':form.optc1.data,
+                             'frac1':form.frac1.data,
+                             'optc2':form.optc2.data,
+                             'frac2':form.frac2.data,
+                             'methodrule':form.methodrule.data,
+                             'monomer':form.monomer.data,
+                             'fillfac':form.fillfac.data,
+                             'distrirule':form.distrirule.data,
+                             'amin':form.amin.data,
+                             'amax':form.amax.data,
+                             'apow':form.apow.data,
+                             'asig':form.asig.data}
+            print(optool_inputs)
+
+            out_l,out_n,out_k = distillery.OpTool(optool_inputs)
 
             #create dictionary object for mixture species
             mixture = {'species' : 'mixture: '+composition_string,
