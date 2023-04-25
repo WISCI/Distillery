@@ -94,18 +94,18 @@ def WriteFile(data):
 #
 # Here we define the functions that manipulate the optical constants
 #
-def PlotData(plotdata,title=None,ylog=False,original=None,*args,**kwargs):
+def PlotData(plotdata,title=None,ylog=False,original=None,ylabel=None,labels=None,*args,**kwargs):
 
   img = io.BytesIO()
          
   plt.title(title)
-  plt.plot(plotdata['wavelength'],plotdata['n'],"-k",label=r"$n_{\rm extr}$")
-  plt.plot(plotdata['wavelength'],plotdata['k'],"-r",label=r"$k_{\rm extr}$")
+  plt.plot(plotdata['wavelength'],plotdata['n'],"-k",label=labels[0])
+  plt.plot(plotdata['wavelength'],plotdata['k'],"-r",label=labels[1])
   if original != None:
     plt.plot(original['wavelength'],np.asarray(original['n'])+0.05,":k",label=r"$n_{\rm orig} + 0.05$")
     plt.plot(original['wavelength'],np.asarray(original['k'])+0.05,":r",label=r"$k_{\rm orig} + 0.05$")  
   plt.xlabel(r"Wavelength ($\mu$m)")
-  plt.ylabel(r"Refractive indices $n$,$k$")
+  plt.ylabel(ylabel)
   #print(form.ylog.data)
   if ylog == True:
       plt.yscale("log")
@@ -255,15 +255,16 @@ def OpTool(commands):
     dist_string = '-a '+str(amin)+' '+str(amax)+' '+str(apow)+' '
   elif distrirule == 'Log-Normal':
     apek = commands['apow']
-    asig = commands['apow']
+    asig = commands['asig']
     dist_string = '-a '+str(amin)+' '+str(amax)+' '+str(apek)+' '+str(asig)+' '
 
   #Execute optool command
-  composition = commands['direc']+commands['optc1'] +' '+str(commands['frac1'])+' '+commands['direc']+commands['optc2'] +' '+str(commands['frac2'])+' '
+  composition = commands['direc']+commands['optc1'] +' '+str(commands['frac1'])+' '+commands['rho1']+' '+commands['direc']+commands['optc2'] +' '+str(commands['frac2'])+' '+' '+commands['rho2']+' '
+  print("optool "+composition+ meth_string+ dist_string+ wave_string)
   os.system("optool "+composition+ meth_string+ dist_string+ wave_string)
 
   #Read in dustkappa.dat
-  optconst = ascii.read(commands['direc']+"dustkappa.dat",comment="#",data_start=2) 
+  optconst = ascii.read("dustkappa.dat",comment="#",data_start=2) 
 
   wavelength = optconst["col1"].data
   qabs = optconst["col2"].data

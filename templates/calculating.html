@@ -1,0 +1,52 @@
+<!doctype html>
+<title>WISCI Distillery</title>
+<h1>Calculating</h1>
+<section>
+  <h2>Input</h2>
+  </section>
+<form method=post action="">
+<table>
+ {% for field in form %}
+  <tr>
+  <td>{{ field }}</td>
+  <td>{{ field.label }}</td>
+  </tr>
+ {% endfor %} 
+</table>
+<p><input type=submit value=Submit></form></p>
+
+<section>
+<h2>Output</h2>
+{% if plot_urlm != None %}
+  <img src="data:image/svg+xml;base64, {{ plot_urlm }}" alt="Plot of wavelength vs. Qabs and Qsca for requested mixture">
+
+{% if filename != None %}
+<form action={{ url_for('download_file',name=filename) }}>
+    <input type="submit" value="Download raw data" />
+</form>
+{% endif %}
+
+<h2>Material properties</h2>
+<table>
+  {% for key, val in mixture.items() %}
+  <tr>
+  {% if key != "n" and key != "k" and key != "wavelength" %}
+    <td>{{ key }}</td>
+    {% if key == 'temperature' %}
+        <td> {{ val }} K <td> 
+    {% elif key == 'density' %}
+        <td> {{ val }} gcm^-3 <td> 
+    {% else %}
+        <td>{{ val }}</td>
+    {% endif %}
+  {% endif %}
+ {% endfor %} 
+  </tr>
+</table>
+
+{% endif %}
+</section>
+
+
+
+

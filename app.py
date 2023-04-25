@@ -102,7 +102,7 @@ class MixingOpToolForm(Form):
 
     amin = FloatField(label="Minimum size (um)", default=0.1,validators=[validators.NumberRange(min=1e-3,max=1e6,message="Value outside of bounds 1e-3 to 1e6")])
     amax = FloatField(label="Maximum size (um)", default=1e3,validators=[validators.NumberRange(min=1e-3,max=1e6,message="Value outside of bounds 1e-3 to 1e6")])
-    apow = FloatField(label="Power law exponent/Standard deviation of sizes (um)*", default=3.5,validators=[validators.NumberRange(min=1e-3,max=1e6,message="Value outside of bounds 1e-3 to 1e6")])
+    apow = FloatField(label="Power law exponent/Peak of sizes (um)*", default=3.5,validators=[validators.NumberRange(min=1e-3,max=1e6,message="Value outside of bounds 1e-3 to 1e6")])
     asig = FloatField(label="Standard deviation of sizes (um)*", default=0.5,validators=[validators.NumberRange(min=1e-3,max=1e6,message="Value outside of bounds 1e-3 to 1e6")])
 
     savedata= BooleanField(label="Make output data available for download",render_kw={'checked': True})
@@ -167,7 +167,7 @@ def plot():
 
             # magic data reduction and calculations take place here
 
-            img = distillery.PlotData(data,title=optcons[np.int32(form.optc.data)].split("/")[-1].split(".")[0],ylog=form.ylog.data)
+            img = distillery.PlotData(data,title=optcons[np.int32(form.optc.data)].split("/")[-1].split(".")[0],ylabel="Refractive indices $n$,$k$",labels=["$n$","$k$"],ylog=form.ylog.data)
             img.seek(0)
 
             plot_url = base64.b64encode(img.getvalue()).decode('utf8')
@@ -222,10 +222,11 @@ def extrapolate():
                        'origin' : 'CALCULATION',
                        'citation' : 'WISCI Distillery ; '+data['citation'] }
 
-            img = distillery.PlotData(extrapolate_data,title=optcons[np.int32(form.optc.data)].split("/")[-1].split(".")[0],ylog=form.ylog.data,original=data)
+            img = distillery.PlotData(extrapolate_data,title=optcons[np.int32(form.optc.data)].split("/")[-1].split(".")[0],ylog=form.ylog.data,ylabel="Refractive indices $n$,$k$",labels=["$n$","$k$"],original=data)
             img.seek(0)
 
             extrapolate_plot = base64.b64encode(img.getvalue()).decode('utf8')
+            filename = None
             if form.savedata.data == True:
                 filename = distillery.WriteFile(extrapolate_data)
             message = None
@@ -296,7 +297,7 @@ def mixing():
                 data = data_array[i]
                 density += data['density']*fracs[i]
 
-                img = distillery.PlotData(data,title=species[i],ylog=form.ylog.data)
+                img = distillery.PlotData(data,title=species[i],ylog=form.ylog.data,ylabel="Refractive indices $n$,$k$",labels=["$n_{\rm extr}$","$k_{\rm extr}$"])
                 img.seek(0)
 
                 plot_urls.append(base64.b64encode(img.getvalue()).decode('utf8'))
@@ -321,7 +322,7 @@ def mixing():
                        'citation' : 'WISCI Distillery' }
 
             #plot for mixture
-            img = distillery.PlotData(mixture,title="mixture: "+composition_string,ylog=form.ylog.data)
+            img = distillery.PlotData(mixture,title="mixture: "+composition_string,ylog=form.ylog.data,ylabel="Refractive indices $n$,$k$",labels=["$n_{\rm extr}$","$k_{\rm extr}$"])
             img.seek(0)
             plot_mixture = base64.b64encode(img.getvalue()).decode('utf8')
 
@@ -362,10 +363,12 @@ def calculating():
             optool_inputs = {'direc':"./static/opticalconstants/lnk/",
                              'wmin':form.wmin.data,
                              'wmax':form.wmax.data,
-                             'optc1':form.optc1.data,
+                             'optc1':optcons[np.int32(form.optc1.data)].split("/")[-1],
                              'frac1':form.frac1.data,
-                             'optc2':form.optc2.data,
+                             'rho1':str(3.0),
+                             'optc2':optcons[np.int32(form.optc2.data)].split("/")[-1],
                              'frac2':form.frac2.data,
+                             'rho2':str(3.0),
                              'methodrule':form.methodrule.data,
                              'monomer':form.monomer.data,
                              'fillfac':form.fillfac.data,
@@ -377,6 +380,10 @@ def calculating():
             print(optool_inputs)
 
             out_l,out_n,out_k = distillery.OpTool(optool_inputs)
+
+            composition_string = optool_inputs['optc1'] + ' ' + optool_inputs['optc2']
+
+            density = 0.0
 
             #create dictionary object for mixture species
             mixture = {'species' : 'mixture: '+composition_string,
@@ -391,7 +398,9 @@ def calculating():
                        'citation' : 'WISCI Distillery' }
 
             #plot for mixture
-            img = distillery.PlotData(mixture,title="mixture: "+composition_string,ylog=form.ylog.data)
+            plot_urls=None
+            data_array = []
+            img = distillery.PlotData(mixture,title="mixture: "+composition_string,ylabel="Qabs, Qsca",labels=["Qabs","Qsca"],ylog=form.ylog.data)
             img.seek(0)
             plot_mixture = base64.b64encode(img.getvalue()).decode('utf8')
 
@@ -399,7 +408,7 @@ def calculating():
                 filename = distillery.WriteFile(mixture)
             else: 
                 filename=None
-            return render_template('mixing.html', plot_urls=plot_urls,form=form,
+            return render_template('calculating.html', plot_urls=plot_urls,form=form,
                                     values=data_array,mixture=mixture,plot_urlm=plot_mixture,
                                     filename=filename)
 
@@ -409,7 +418,7 @@ def calculating():
             data_array=None
             mixture=None
             plot_mixture=None
-            return render_template('mixing.html', plot_urls=plot_urls,form=form,
+            return render_template('calculating.html', plot_urls=plot_urls,form=form,
                                     values=data_array,mixture=mixture,plot_urlm=plot_mixture,
                                     filename=filename)
 
