@@ -297,7 +297,7 @@ def mixing():
                 data = data_array[i]
                 density += data['density']*fracs[i]
 
-                img = distillery.PlotData(data,title=species[i],ylog=form.ylog.data,ylabel="Refractive indices $n$,$k$",labels=["$n_{\rm extr}$","$k_{\rm extr}$"])
+                img = distillery.PlotData(data,title=species[i],ylog=form.ylog.data,ylabel="Refractive indices $n$,$k$",labels=[r"$n_{\rm extr}$",r"$k_{\rm extr}$"])
                 img.seek(0)
 
                 plot_urls.append(base64.b64encode(img.getvalue()).decode('utf8'))
