@@ -322,7 +322,7 @@ def mixing():
                        'citation' : 'WISCI Distillery' }
 
             #plot for mixture
-            img = distillery.PlotData(mixture,title="mixture: "+composition_string,ylog=form.ylog.data,ylabel="Refractive indices $n$,$k$",labels=["$n_{\rm extr}$","$k_{\rm extr}$"])
+            img = distillery.PlotData(mixture,title="mixture: "+composition_string,ylog=form.ylog.data,ylabel="Refractive indices $n$,$k$",labels=[r"$n_{\rm extr}$",r"$k_{\rm extr}$"])
             img.seek(0)
             plot_mixture = base64.b64encode(img.getvalue()).decode('utf8')
 

@@ -14,8 +14,8 @@
 #  grain   1.000  3.00  mixture of  2 materials
 #----------------------------------------------------------------------------
 # Command: optool ./static/opticalconstants/lnk/olmg50.lnk 0.5 3.0 \
-#   ./static/opticalconstants/lnk/pyrmg50.lnk 0.5 3.0 -dhs 0.5 -a 0.1 \
-#   1000.0 3.5 -l 0.1 1000.0 -fmax 0
+#   ./static/opticalconstants/lnk/pyrmg50.lnk 0.5 3.0 -mie -a 0.1 1000.0 \
+#   3.5 -l 0.1 1000.0 -fmax 0
 #============================================================================
 # Standard output file, no scattering matrix
 #    iformat
