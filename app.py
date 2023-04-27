@@ -24,13 +24,10 @@ class PlotForm(Form):
     optcons.sort()
     listopt=[]
     for i_optcon,optcon in enumerate(optcons):
-        listopt.append((i_optcon,optcon.split("/")[-1].split(".")[0]))
+        listopt.append((i_optcon,optcon.split("/")[-1].strip('.json')))
     print(listopt)
    
     optc=SelectField("Species",choices=listopt)
-    #options_sil=SelectMultipleField("Select Silicates (unused)",choices=listopt)
-    #options_car=SelectMultipleField("Select Carbons (unused)",choices=listopt)
-    #options_ice=SelectMultipleField("Select Ices (unused)",choices=listopt)
     savedata= BooleanField(label="Make raw data available for download",render_kw={'checked': False})
     ylog= BooleanField(label="Log Y-axis",default="")
 
@@ -40,7 +37,7 @@ class ExtrapolateForm(Form):
     optcons.sort()
     listopt=[]
     for i_optcon,optcon in enumerate(optcons):
-        listopt.append((i_optcon,optcon.split("/")[-1].split(".")[0]))
+        listopt.append((i_optcon,optcon.split("/")[-1].strip('.json')))
     print(listopt)
     
     optc=SelectField("Species",choices=listopt)
@@ -61,7 +58,7 @@ class MixingForm(Form):
     optcons.sort()
     listopt=[]
     for i_optcon,optcon in enumerate(optcons):
-        listopt.append((i_optcon,optcon.split("/")[-1].split(".")[0]))
+        listopt.append((i_optcon,optcon.split("/")[-1].strip('.json')))
     print(listopt)
     listmix = ['Bruggeman','MaxwellGarnett']
     optc1=SelectField("1st Species",choices=listopt)
@@ -80,7 +77,7 @@ class MixingOpToolForm(Form):
     optcons.sort()
     listopt=[]
     for i_optcon,optcon in enumerate(optcons):
-        listopt.append((i_optcon,optcon.split("/")[-1].split(".")[0]))
+        listopt.append((i_optcon,optcon.split("/")[-1].strip('.lnk')))
     print(listopt)
     listmethod = ['Distribution of Hollow Spheres','Modified Mean Field','Mie','Continuous Distribution of Ellipsoids']
     listdistri = ['Power Law','Log-Normal']
@@ -124,8 +121,6 @@ import base64
 @app.route("/favicon.ico")
 def favicon():
     return send_from_directory('./static',"favicon_wisci.png",mimetype = 'image/vnd.microsoft.icon')
-
-
 #@context.processor
 
 
@@ -173,7 +168,7 @@ def plot():
             plot_url = base64.b64encode(img.getvalue()).decode('utf8')
 
             if form.savedata.data == True:
-                filename = distillery.WriteFile(data)
+                filename = distillery.WriteFileJSON(data)
             else:
                 filename=None
             return render_template('plot.html', plot_url=plot_url,form=form,
@@ -189,6 +184,7 @@ def plot():
 #except:
      #   return render_template('err.html')
 
+#Plot up a set of optical constants
 @app.route('/extrapolate',methods=['GET','POST'])
 def extrapolate():
     if True:
@@ -222,13 +218,13 @@ def extrapolate():
                        'origin' : 'CALCULATION',
                        'citation' : 'WISCI Distillery ; '+data['citation'] }
 
-            img = distillery.PlotData(extrapolate_data,title=optcons[np.int32(form.optc.data)].split("/")[-1].split(".")[0],ylog=form.ylog.data,ylabel="Refractive indices $n$,$k$",labels=["$n$","$k$"],original=data)
+            img = distillery.PlotData(extrapolate_data,title=optcons[np.int32(form.optc.data)].split("/")[-1].split(".")[0],ylog=form.ylog.data,ylabel="Refractive indices $n$,$k$",labels=[r"$n_{\rm extr}$",r"$k_{\rm extr}$"],original=data)
             img.seek(0)
 
             extrapolate_plot = base64.b64encode(img.getvalue()).decode('utf8')
             filename = None
             if form.savedata.data == True:
-                filename = distillery.WriteFile(extrapolate_data)
+                filename = distillery.WriteFileJSON(extrapolate_data)
             message = None
             return render_template('extrapolate.html', extrapolate_plot=extrapolate_plot,form=form,
                                     values=extrapolate_data,message=message,
@@ -242,13 +238,14 @@ def extrapolate():
                                     values=extrapolate_data,message=message,
                                     filename=filename)
 
+#Mix two or three sets of optical constants together
 @app.route('/mixing',methods=['GET','POST'])
 def mixing():
     if True:
     #try:
         form=MixingForm(request.form)
         if request.method == 'POST' and form.validate():
-            optcons=glob.glob("./static/opticalconstants/json/*")
+            optcons=glob.glob( "./static/opticalconstants/json/*")
             optcons.sort()
             
             #sort out which species and how many in what order:
@@ -287,17 +284,23 @@ def mixing():
             nspecies = len(data_array)
             # magic data reduction and calculations take place here
             plot_urls=[]
+
             density = 0.0
-
-            composition_string = ""
+            composition_string = ''
+            mixture_string     = ''
+            stype_string       = ''
+            citation_string    = '' 
             for i in range(0,nspecies):
-                composition_string += str(fracs[i])+"x "+species[i]+" "
+                data = data_array[i]
+                composition_string += str(fracs[i])+'x '+data['species']+', '
+                mixture_string     += data['formula'] + ', '
+                stype_string       += data['stype'] + ', '
+                citation_string    += data['citation'] + '; '
 
-            for i in range(0,nspecies):
                 data = data_array[i]
                 density += data['density']*fracs[i]
 
-                img = distillery.PlotData(data,title=species[i],ylog=form.ylog.data,ylabel="Refractive indices $n$,$k$",labels=[r"$n_{\rm extr}$",r"$k_{\rm extr}$"])
+                img = distillery.PlotData(data,title=species[i],ylog=form.ylog.data,ylabel='Refractive indices $n$,$k$',labels=[r'$n_{\rm mix}$',r'$k_{\rm mix}$'])
                 img.seek(0)
 
                 plot_urls.append(base64.b64encode(img.getvalue()).decode('utf8'))
@@ -311,23 +314,23 @@ def mixing():
 
             #create dictionary object for mixture species
             mixture = {'species' : 'mixture: '+composition_string,
-                       'formula' : 'N/A',
+                       'formula' : 'mixture: '+mixture_string,
                        'wavelength' : out_l,
                        'n' : out_n,
                        'k' : out_k, 
                        'density' : str(density),
                        'temperature' : 'N/A',
-                       'stype' : 'N/A',
+                       'stype' : 'mixture: '+stype_string,
                        'origin' : 'CALCULATION',
-                       'citation' : 'WISCI Distillery' }
+                       'citation' : 'WISCI Distillery ; '+citation_string}
 
             #plot for mixture
-            img = distillery.PlotData(mixture,title="mixture: "+composition_string,ylog=form.ylog.data,ylabel="Refractive indices $n$,$k$",labels=[r"$n_{\rm extr}$",r"$k_{\rm extr}$"])
+            img = distillery.PlotData(mixture,title="mixture: "+composition_string,ylog=form.ylog.data,ylabel='Refractive indices $n$,$k$',labels=[r'$n_{\rm mix}$',r'$k_{\rm mix}$'])
             img.seek(0)
             plot_mixture = base64.b64encode(img.getvalue()).decode('utf8')
 
             if form.savedata.data == True:
-                filename = distillery.WriteFile(mixture)
+                filename = distillery.WriteFileJSON(mixture)
             else: 
                 filename=None
             return render_template('mixing.html', plot_urls=plot_urls,form=form,
@@ -344,6 +347,7 @@ def mixing():
                                     values=data_array,mixture=mixture,plot_urlm=plot_mixture,
                                     filename=filename)
 
+#Caclulate Qabs, Qsca for material using optical constants
 @app.route('/calculating',methods=['GET','POST'])
 def calculating():
     if True:
@@ -360,15 +364,23 @@ def calculating():
             if form.frac1.data == 0.0:
                 return render_template('err.html',page='Mixing',error="First species fraction cannot be zero.")
 
+            #load json files with ancillary information
+            with open('./static/opticalconstants/json/'+optcons[np.int32(form.optc1.data)].split('/')[-1].strip('.lnk')+'.json') as datafile:
+                data1  = json.load(datafile)
+            with open('./static/opticalconstants/json/'+optcons[np.int32(form.optc2.data)].split('/')[-1].strip('.lnk')+'.json')  as datafile:
+                data2  = json.load(datafile)
+
+            data_array = [data1,data2]
+
             optool_inputs = {'direc':"./static/opticalconstants/lnk/",
                              'wmin':form.wmin.data,
                              'wmax':form.wmax.data,
-                             'optc1':optcons[np.int32(form.optc1.data)].split("/")[-1],
+                             'optc1':optcons[np.int32(form.optc1.data)].split("/")[-1].strip('.lnk'),
                              'frac1':form.frac1.data,
-                             'rho1':str(3.0),
-                             'optc2':optcons[np.int32(form.optc2.data)].split("/")[-1],
+                             'rho1':data1['density'],
+                             'optc2':optcons[np.int32(form.optc2.data)].split("/")[-1].strip('.lnk'),
                              'frac2':form.frac2.data,
-                             'rho2':str(3.0),
+                             'rho2':data2['density'],
                              'methodrule':form.methodrule.data,
                              'monomer':form.monomer.data,
                              'fillfac':form.fillfac.data,
@@ -381,21 +393,37 @@ def calculating():
 
             out_l,out_n,out_k = distillery.OpTool(optool_inputs)
 
-            composition_string = optool_inputs['optc1'] + ' ' + optool_inputs['optc2']
-
             density = 0.0
+            composition_string = ''
+            mixture_string     = ''
+            stype_string       = ''
+            citation_string    = ''
+            for i in range(0,nspecies):
+                data = data_array[i]
+                density += data['density']*fracs[i]
+
+                if i != npsecies-1:
+                    composition_string += data['species'] + ' , ' 
+                    mixture_string     += data['formula'] + ' , '
+                    stype_string       += data['stype'] + ' , ' 
+                    citation_string    += data['citation'] + '; '
+                else:
+                    composition_string += data['species']
+                    mixture_string     += data['formula']
+                    stype_string       += data['stype']
+                    citation_string    += data['citation']
 
             #create dictionary object for mixture species
             mixture = {'species' : 'mixture: '+composition_string,
-                       'formula' : 'N/A',
+                       'formula' : 'mixture: '+mixture_string, 
                        'wavelength' : out_l,
                        'n' : out_n,
                        'k' : out_k, 
                        'density' : str(density),
                        'temperature' : 'N/A',
-                       'stype' : 'N/A',
+                       'stype' : stype_string,
                        'origin' : 'CALCULATION',
-                       'citation' : 'WISCI Distillery' }
+                       'citation' : 'WISCI Distillery ; ' +citation_string }
 
             #plot for mixture
             plot_urls=None
@@ -405,7 +433,7 @@ def calculating():
             plot_mixture = base64.b64encode(img.getvalue()).decode('utf8')
 
             if form.savedata.data == True:
-                filename = distillery.WriteFile(mixture)
+                filename = distillery.WriteFileJSON(mixture)
             else: 
                 filename=None
             return render_template('calculating.html', plot_urls=plot_urls,form=form,

@@ -7,7 +7,7 @@ from scipy.optimize import fsolve
 import scipy.fftpack as ft
 import matplotlib.pyplot as plt
 import uuid
-import os
+import subprocess
 from astropy.io import ascii
 
 #To do list:
@@ -68,15 +68,31 @@ def ReadJSON(species=None):
 
     return mydict
 
-def WriteJSON(mydict):
-#function to write a json file for a single species
-    with open('./json/'+mydict['species']+'.json', 'w') as payload:
-        json.dump(mydict, payload)
+def WriteFileJSON(mydict):
+#function to write a json file for a single species - need to convert NumPy arrays to lists
+    file_uuid = str(uuid.uuid4())
+    filename="distillery_"+file_uuid+".json"
 
-def WriteFile(data):
+    output = {'species': mydict['species'],
+              'wavelength': mydict['wavelength'].tolist(),
+              'n': mydict['n'].tolist(),
+              'k': mydict['k'].tolist(),
+              'formula': mydict['formula'],
+              'density': mydict['density'],
+              'temperature': mydict['temperature'],
+              'stype' : mydict['stype'],
+              'origin' : mydict['origin'],
+              'citation': mydict['citation']
+              }
+    with open('./static/client/'+filename, 'w') as payload:
+        json.dump(output, payload)
+
+    return filename
+
+def WriteFileCSV(data):
 #function to write a plain txt file based on input data
     file_uuid = str(uuid.uuid4())
-    filename="distillery_"+file_uuid+".csv"
+    filename='distillery_'+file_uuid+'.csv'
     header  = 'Species: ' + data['species'] + '\n' 
     header += 'Temperature: ' + str(data['temperature']) + '\n' 
     header += 'Density: ' + str(data['density']) + '\n' 
@@ -87,7 +103,7 @@ def WriteFile(data):
     header += 'Wavelength in microns' + '\n'
     header += '  wav     n      k   ' + '\n'
     header += '#####################'
-    np.savetxt("./static/client/"+filename,np.c_[data['wavelength'],data['n'],data['k']],\
+    np.savetxt('./static/client/'+filename,np.c_[data['wavelength'],data['n'],data['k']],\
                header=header,fmt='%.5f')
 
     return filename
@@ -196,7 +212,7 @@ def Bruggeman(fracs,data_array):
     nn.append(bg_n)
     kk.append(bg_k)
 
-  return wave,nn,kk
+  return np.asarray(wave),np.asarray(nn),np.asarray(kk)
 
 def MaxwellGarnett(fracs,data_array):
   #matrix is the larger of the two volume fractions
@@ -224,7 +240,7 @@ def MaxwellGarnett(fracs,data_array):
   mg_n = epse.real
   mg_k = epse.imag
 
-  return wave,mg_n,mg_k
+  return np.asarray(wave),mg_n,mg_k
 
 def OpTool(commands):
   """Function to combine and extrapolate optical constants for materials using optool
@@ -240,12 +256,14 @@ def OpTool(commands):
   fmax = commands['fillfac']
   if methodrule == 'Distribution of Hollow Spheres':
     meth_string = ' -dhs '+str(fmax)+' '
-  if methodrule == 'Modified Mean Field':
+  elif methodrule == 'Modified Mean Field':
     meth_string = ' -mmf '+str(monomer)+' '+str(fmax)+' '
-  if methodrule == 'Mie':
+  elif methodrule == 'Mie':
     meth_string = ' -mie ' # == -dhs 0 
-  if methodrule == 'Continuous Distribution of Ellipsoids':
+  elif methodrule == 'Continuous Distribution of Ellipsoids':
     meth_string = ' -cde '
+  else:
+    print("Method rule not known")
 
   distrirule = commands['distrirule']
   amin = commands['amin']
@@ -257,11 +275,16 @@ def OpTool(commands):
     apek = commands['apow']
     asig = commands['asig']
     dist_string = '-a '+str(amin)+' '+str(amax)+' '+str(apek)+' '+str(asig)+' '
+  else: 
+    print("Distribution rule not known")
 
   #Execute optool command
-  composition = commands['direc']+commands['optc1'] +' '+str(commands['frac1'])+' '+commands['rho1']+' '+commands['direc']+commands['optc2'] +' '+str(commands['frac2'])+' '+' '+commands['rho2']+' '
+  composition = commands['direc']+commands['optc1'] +' '+str(commands['frac1'])+' '+str(commands['rho1'])+' '+commands['direc']+commands['optc2'] +' '+str(commands['frac2'])+' '+' '+str(commands['rho2'])+' '
+  
   print("optool "+composition+ meth_string+ dist_string+ wave_string)
-  os.system("optool "+composition+ meth_string+ dist_string+ wave_string)
+
+  #os.system("optool "+composition+ meth_string+ dist_string+ wave_string)
+  out = subprocess.Popen("optool " +composition+ meth_string+ dist_string+ wave_string, shell=True).wait()
 
   #Read in dustkappa.dat
   optconst = ascii.read("dustkappa.dat",comment="#",data_start=2) 
