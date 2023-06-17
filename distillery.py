@@ -19,6 +19,7 @@ from astropy.io import ascii
 
 def ReadData(species=None):
 #function to read in a formatted text file for a single species
+#this function has been replaced with reading in json files (see below)
     
     # lnk file has 3 columns, space delimited
     # wavelength (um), n, k
@@ -62,7 +63,7 @@ def ReadData(species=None):
     return mydict
 
 def ReadJSON(species=None):
-#function to write a json file for a single species
+#function to read a json file for a single species
     with open('./json/'+species+'.json', 'r') as payload:
         mydict = json.load(payload)
 

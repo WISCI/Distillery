@@ -372,13 +372,29 @@ def calculating():
 
             data_array = [data1,data2]
 
+            #check if lnk files for these compositions exist; if not, make them
+            #lnkpaths = []
+            #for i in range(0,len(data_array)):
+            #    data = data_array[i]
+            #    lnkpaths.append('./static/opticalconstants/lnk/'+data["species"]+'.lnk')
+            
+            for i in range(0,len(data_array)):
+                data    = data_array[i]                
+                lnkfile = './static/opticalconstants/lnk/'+ data["species"]+'.lnk'
+
+                try os.path.isfile(lnkfile):
+                    print(lnkfile + " exists")
+                except FileNotFoundError:
+                    print(lnkfile + " does not exist, writing .lnk file")
+                    np.savetxt(lnkfile,np.c_[data['wavelength'],data['n'],data['k']])
+
             optool_inputs = {'direc':"./static/opticalconstants/lnk/",
                              'wmin':form.wmin.data,
                              'wmax':form.wmax.data,
-                             'optc1':optcons[np.int32(form.optc1.data)].split("/")[-1].strip('.lnk'),
+                             'optc1':'./static/opticalconstants/lnk/'+ data1["species"]+'.lnk',
                              'frac1':form.frac1.data,
                              'rho1':data1['density'],
-                             'optc2':optcons[np.int32(form.optc2.data)].split("/")[-1].strip('.lnk'),
+                             'optc2':'./static/opticalconstants/lnk/'+ data2["species"]+'.lnk',
                              'frac2':form.frac2.data,
                              'rho2':data2['density'],
                              'methodrule':form.methodrule.data,
