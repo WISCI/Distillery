@@ -59,7 +59,7 @@ class MixingForm(Form):
     listopt=[]
     for i_optcon,optcon in enumerate(optcons):
         listopt.append((i_optcon,optcon.split("/")[-1].strip('.json')))
-    print(listopt)
+    #print(listopt)
     listmix = ['Bruggeman','MaxwellGarnett']
     optc1=SelectField("1st Species",choices=listopt)
     frac1=FloatField(label="Fraction", default=0.5,validators=[validators.NumberRange(min=0,max=1,message="Fraction outside of bounds 0<=f<=1")])
@@ -78,7 +78,7 @@ class MixingOpToolForm(Form):
     listopt=[]
     for i_optcon,optcon in enumerate(optcons):
         listopt.append((i_optcon,optcon.split("/")[-1].strip('.lnk')))
-    print(listopt)
+    #print(listopt)
     listmethod = ['Distribution of Hollow Spheres','Modified Mean Field','Mie','Continuous Distribution of Ellipsoids']
     listdistri = ['Power Law','Log-Normal']
     
@@ -382,7 +382,8 @@ def calculating():
                 data    = data_array[i]                
                 lnkfile = './static/opticalconstants/lnk/'+ data["species"]+'.lnk'
 
-                try os.path.isfile(lnkfile):
+                try:
+                    os.path.isfile(lnkfile)
                     print(lnkfile + " exists")
                 except FileNotFoundError:
                     print(lnkfile + " does not exist, writing .lnk file")

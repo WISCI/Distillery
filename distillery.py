@@ -3,8 +3,10 @@ import json
 import io
 import scipy.interpolate as intp
 from scipy import integrate
+import copy
 from scipy.optimize import fsolve
 import scipy.fftpack as ft
+from scipy.interpolate import interp1d
 import matplotlib.pyplot as plt
 import uuid
 import subprocess
@@ -73,11 +75,11 @@ def WriteFileJSON(mydict):
 #function to write a json file for a single species - need to convert NumPy arrays to lists
     file_uuid = str(uuid.uuid4())
     filename="distillery_"+file_uuid+".json"
-
+    
     output = {'species': mydict['species'],
-              'wavelength': mydict['wavelength'].tolist(),
-              'n': mydict['n'].tolist(),
-              'k': mydict['k'].tolist(),
+              'wavelength': list(mydict['wavelength']),
+              'n': list(mydict['n']),
+              'k': list(mydict['k']),
               'formula': mydict['formula'],
               'density': mydict['density'],
               'temperature': mydict['temperature'],
@@ -85,6 +87,7 @@ def WriteFileJSON(mydict):
               'origin' : mydict['origin'],
               'citation': mydict['citation']
               }
+
     with open('./static/client/'+filename, 'w') as payload:
         json.dump(output, payload)
 
@@ -178,7 +181,9 @@ def KramersKronig(data_array):
 
     return kk_l,kk_n, kk_k
 
-def Bruggeman(fracs,data_array):
+def Bruggeman(fracs,input_data):
+
+  data_array = FormatData(input_data)
 
   wave = data_array[0]['wavelength']
   eps_ = []
@@ -215,7 +220,11 @@ def Bruggeman(fracs,data_array):
 
   return np.asarray(wave),np.asarray(nn),np.asarray(kk)
 
-def MaxwellGarnett(fracs,data_array):
+def MaxwellGarnett(fracs,input_data):
+
+  #format data so the wavelength ranges and sampling match
+  data_array = FormatData(input_data)
+
   #matrix is the larger of the two volume fractions
   wave = data_array[np.argmax(fracs)]['wavelength']
   nm = data_array[np.argmax(fracs)]['n']
@@ -242,6 +251,38 @@ def MaxwellGarnett(fracs,data_array):
   mg_k = epse.imag
 
   return np.asarray(wave),mg_n,mg_k
+
+def FormatData(raw_data):
+
+  nspec = len(raw_data)  
+
+  #define grid over which to interpolate species
+  wmin = 0.3  #np.min(raw_data[0]['wavelength'])
+  wmax = 30.0 #np.max(raw_data[0]['wavelength'])
+  nw   = 1000  #len(raw_data[0]['wavelength'])
+  wavegrid = np.linspace(wmin,wmax,nw)
+
+  formatted_data = copy.copy(raw_data)
+
+  for i in range(0,len(raw_data)):
+    if np.min(raw_data[i]['wavelength']) < wmin or np.max(raw_data[i]['wavelength']) > wmax:
+      ex_wav,ex_rl,ex_im = Extrapolation(raw_data[i],wave_min=wmin,wave_max=wmax)
+
+      fn = interp1d(ex_wav,ex_rl)
+      formatted_data[i]['n'] = fn(wavegrid)
+      fk = interp1d(ex_wav,ex_im)
+      formatted_data[i]['k'] = fk(wavegrid)
+      formatted_data[i]['wavelength'] = wavegrid
+
+    else: 
+      fn = interp1d(raw_data[i]['wavelength'],raw_data[i]['n'])
+      formatted_data[i]['n'] = fn(wavegrid)
+      fk = interp1d(raw_data[i]['wavelength'],raw_data[i]['k'])
+      formatted_data[i]['k'] = fk(wavegrid)
+      formatted_data[i]['wavelength'] = wavegrid
+  
+  return formatted_data
+
 
 def OpTool(commands):
   """Function to combine and extrapolate optical constants for materials using optool
