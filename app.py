@@ -13,6 +13,8 @@ import os
 
 import distillery #functions to manipulate optical constants - everything not webpage related.
 
+root_dir = '/Users/jonty/Documents/GitHub/Distillery/'
+
 #@app.route("/myplot", methods=["GET"])
 matplotlib.use('Agg')
 
@@ -25,7 +27,7 @@ class PlotForm(Form):
     listopt=[]
     for i_optcon,optcon in enumerate(optcons):
         listopt.append((i_optcon,optcon.split("/")[-1].strip('.json')))
-    print(listopt)
+    #print(listopt)
    
     optc=SelectField("Species",choices=listopt)
     savedata= BooleanField(label="Make raw data available for download",render_kw={'checked': False})
@@ -38,7 +40,7 @@ class ExtrapolateForm(Form):
     listopt=[]
     for i_optcon,optcon in enumerate(optcons):
         listopt.append((i_optcon,optcon.split("/")[-1].strip('.json')))
-    print(listopt)
+    #print(listopt)
     
     optc=SelectField("Species",choices=listopt)
     #options_sil=SelectMultipleField("Select Silicates (unused)",choices=listopt)
@@ -73,11 +75,11 @@ class MixingForm(Form):
 
 
 class MixingOpToolForm(Form):
-    optcons=glob.glob("./static/opticalconstants/lnk/*")
+    optcons=glob.glob("./static/opticalconstants/json/*")
     optcons.sort()
     listopt=[]
     for i_optcon,optcon in enumerate(optcons):
-        listopt.append((i_optcon,optcon.split("/")[-1].strip('.lnk')))
+        listopt.append((i_optcon,optcon.split("/")[-1].strip('.json')))
     #print(listopt)
     listmethod = ['Distribution of Hollow Spheres','Modified Mean Field','Mie','Continuous Distribution of Ellipsoids']
     listdistri = ['Power Law','Log-Normal']
@@ -89,6 +91,9 @@ class MixingOpToolForm(Form):
     frac1=FloatField(label="Fraction", default=0.5,validators=[validators.NumberRange(min=0,max=1,message="Fraction outside of bounds 0<=f<=1")])
     optc2=SelectField("2nd Species",choices=listopt,default=2)
     frac2=FloatField(label="Fraction", default=0.5,validators=[validators.NumberRange(min=0,max=1,message="Fraction outside of bounds 0<=f<=1")])
+    optc3=SelectField("3rd Species",choices=listopt,default=2)
+    frac3=FloatField(label="Fraction", default=0.0,validators=[validators.NumberRange(min=0,max=1,message="Fraction outside of bounds 0<=f<=1")])
+
     
     methodrule = SelectField("Grain geometry:",choices=listmethod)
     
@@ -144,7 +149,7 @@ def favicon():
 def download_file(name):
     return send_from_directory("./static/client/", name, as_attachment=True)
 
-@app.route('/plot',methods=['GET','POST'])
+@app.route('/plotting',methods=['GET','POST'])
 def plot():
     if True:
     #try:
@@ -185,7 +190,7 @@ def plot():
      #   return render_template('err.html')
 
 #Plot up a set of optical constants
-@app.route('/extrapolate',methods=['GET','POST'])
+@app.route('/extrapolating',methods=['GET','POST'])
 def extrapolate():
     if True:
     #try:
@@ -253,10 +258,7 @@ def mixing():
                 return render_template('err.html',page='Mixing',error="Sum of fractions cannot be zero.")
 
             if np.sum(form.frac1.data + form.frac2.data + form.frac3.data) != 1.0 : #normalise to unity
-                frac_sum = form.frac1.data + form.frac2.data + form.frac3.data
-                form.frac1.data /= frac_sum
-                form.frac2.data /= frac_sum
-                form.frac3.data /= frac_sum
+                return render_template('err.html',page='Mixing',error="Sum of fractions must be one.")
 
             if form.frac1.data == 0.0:
                 return render_template('err.html',page='Mixing',error="First species fraction cannot be zero.")
@@ -305,7 +307,7 @@ def mixing():
 
                 plot_urls.append(base64.b64encode(img.getvalue()).decode('utf8'))
 
-            print(form.mixrule.data)
+            #print(form.mixrule.data)
             if form.mixrule.data == 'Bruggeman' :
                 out_l,out_n,out_k = distillery.Bruggeman(fracs,data_array)
 
@@ -348,64 +350,110 @@ def mixing():
                                     filename=filename)
 
 #Caclulate Qabs, Qsca for material using optical constants
-@app.route('/calculating',methods=['GET','POST'])
-def calculating():
+@app.route('/mixing_optool',methods=['GET','POST'])
+def mixing_optool():
     if True:
     #try:
         form=MixingOpToolForm(request.form)
         if request.method == 'POST' and form.validate():
-            optcons=glob.glob("./static/opticalconstants/lnk/*.lnk")
+            optcons=glob.glob( "./static/opticalconstants/json/*")
             optcons.sort()
             
             #sort out which species and how many in what order:
-            if np.sum(form.frac1.data + form.frac2.data) == 0.0 :
+            if np.sum(form.frac1.data + form.frac2.data + form.frac3.data) == 0.0 :
                 return render_template('err.html',page='Mixing',error="Sum of fractions cannot be zero.")
+
+            if np.sum(form.frac1.data + form.frac2.data + form.frac3.data) != 1.0 : #normalise to unity
+                return render_template('err.html',page='Mixing',error="Sum of fractions must be one.")
 
             if form.frac1.data == 0.0:
                 return render_template('err.html',page='Mixing',error="First species fraction cannot be zero.")
 
-            #load json files with ancillary information
-            with open('./static/opticalconstants/json/'+optcons[np.int32(form.optc1.data)].split('/')[-1].strip('.lnk')+'.json') as datafile:
-                data1  = json.load(datafile)
-            with open('./static/opticalconstants/json/'+optcons[np.int32(form.optc2.data)].split('/')[-1].strip('.lnk')+'.json')  as datafile:
-                data2  = json.load(datafile)
+            data_array = []
+            species = []
+            fracs = []
+            with open(optcons[np.int32(form.optc1.data)]) as datafile:
+                data_array.append(json.load(datafile))
+                species.append(optcons[np.int32(form.optc1.data)].split("/")[-1].split(".")[0])
+                fracs.append(form.frac1.data)
 
-            data_array = [data1,data2]
+            if form.frac2.data != 0.0:
+                with open(optcons[np.int32(form.optc2.data)]) as datafile:
+                    data_array.append(json.load(datafile))
+                    species.append(optcons[np.int32(form.optc2.data)].split("/")[-1].split(".")[0])
+                    fracs.append(form.frac2.data)
+
+            if form.frac3.data != 0.0 and form.frac2.data == 0: 
+                with open(optcons[np.int32(form.optc2.data)]) as datafile:
+                    data_array.append(json.load(datafile))
+                    species.append(optcons[np.int32(form.optc2.data)].split("/")[-1].split(".")[0])
+                    fracs.append(form.frac2.data)
+
+            if form.frac3.data != 0.0 and form.frac2.data > 0: 
+                with open(optcons[np.int32(form.optc3.data)]) as datafile:
+                    data_array.append(json.load(datafile))
+                    species.append(optcons[np.int32(form.optc3.data)].split("/")[-1].split(".")[0])
+                    fracs.append(form.frac3.data)
+
+            nspecies = len(data_array)
 
             #check if lnk files for these compositions exist; if not, make them
             #lnkpaths = []
             #for i in range(0,len(data_array)):
             #    data = data_array[i]
             #    lnkpaths.append('./static/opticalconstants/lnk/'+data["species"]+'.lnk')
-            
-            for i in range(0,len(data_array)):
-                data    = data_array[i]                
-                lnkfile = './static/opticalconstants/lnk/'+ data["species"]+'.lnk'
+            for i in range(0,nspecies):
+                data    = data_array[i]
+                lnkfile = data["species"]+'.lnk' #.split('/')[-1]
 
-                try:
-                    os.path.isfile(lnkfile)
+                print('lnkfile: ',lnkfile)
+                if os.path.isfile(root_dir + "static/opticalconstants/lnk/" + lnkfile):
                     print(lnkfile + " exists")
-                except FileNotFoundError:
+                else: 
                     print(lnkfile + " does not exist, writing .lnk file")
-                    np.savetxt(lnkfile,np.c_[data['wavelength'],data['n'],data['k']])
+                    np.savetxt(root_dir + "static/opticalconstants/lnk/" + lnkfile,np.c_[data['wavelength'],data['n'],data['k']])
 
-            optool_inputs = {'direc':"./static/opticalconstants/lnk/",
-                             'wmin':form.wmin.data,
-                             'wmax':form.wmax.data,
-                             'optc1':'./static/opticalconstants/lnk/'+ data1["species"]+'.lnk',
-                             'frac1':form.frac1.data,
-                             'rho1':data1['density'],
-                             'optc2':'./static/opticalconstants/lnk/'+ data2["species"]+'.lnk',
-                             'frac2':form.frac2.data,
-                             'rho2':data2['density'],
-                             'methodrule':form.methodrule.data,
-                             'monomer':form.monomer.data,
-                             'fillfac':form.fillfac.data,
-                             'distrirule':form.distrirule.data,
-                             'amin':form.amin.data,
-                             'amax':form.amax.data,
-                             'apow':form.apow.data,
-                             'asig':form.asig.data}
+            if nspecies == 3:
+                optool_inputs = {'nspecies':3,
+                                 'direc':"./static/opticalconstants/lnk/",
+                                 'wmin':form.wmin.data,
+                                 'wmax':form.wmax.data,
+                                 'optc1': species[0]+'.lnk',
+                                 'frac1':form.frac1.data,
+                                 'rho1':data_array[0]['density'],
+                                 'optc2': species[1]+'.lnk',
+                                 'frac2':form.frac2.data,
+                                 'rho2':data_array[1]['density'],
+                                 'optc3': species[2]+'.lnk',
+                                 'frac3':form.frac3.data,
+                                 'rho3':data_array[2]['density'],
+                                 'methodrule':form.methodrule.data,
+                                 'monomer':form.monomer.data,
+                                 'fillfac':form.fillfac.data,
+                                 'distrirule':form.distrirule.data,
+                                 'amin':form.amin.data,
+                                 'amax':form.amax.data,
+                                 'apow':form.apow.data,
+                                 'asig':form.asig.data}
+            else: 
+                optool_inputs = {'nspecies':2,
+                                 'direc':"./static/opticalconstants/lnk/",
+                                 'wmin':form.wmin.data,
+                                 'wmax':form.wmax.data,
+                                 'optc1': species[0]+'.lnk',
+                                 'frac1':form.frac1.data,
+                                 'rho1':data_array[0]['density'],
+                                 'optc2': species[1]+'.lnk',
+                                 'frac2':form.frac2.data,
+                                 'rho2':data_array[1]['density'],                           
+                                 'methodrule':form.methodrule.data,
+                                 'monomer':form.monomer.data,
+                                 'fillfac':form.fillfac.data,
+                                 'distrirule':form.distrirule.data,
+                                 'amin':form.amin.data,
+                                 'amax':form.amax.data,
+                                 'apow':form.apow.data,
+                                 'asig':form.asig.data}
             print(optool_inputs)
 
             out_l,out_n,out_k = distillery.OpTool(optool_inputs)
@@ -419,7 +467,7 @@ def calculating():
                 data = data_array[i]
                 density += data['density']*fracs[i]
 
-                if i != npsecies-1:
+                if i != nspecies-1:
                     composition_string += data['species'] + ' , ' 
                     mixture_string     += data['formula'] + ' , '
                     stype_string       += data['stype'] + ' , ' 
@@ -453,7 +501,7 @@ def calculating():
                 filename = distillery.WriteFileJSON(mixture)
             else: 
                 filename=None
-            return render_template('calculating.html', plot_urls=plot_urls,form=form,
+            return render_template('mixing_optool.html', plot_urls=plot_urls,form=form,
                                     values=data_array,mixture=mixture,plot_urlm=plot_mixture,
                                     filename=filename)
 
@@ -463,7 +511,7 @@ def calculating():
             data_array=None
             mixture=None
             plot_mixture=None
-            return render_template('calculating.html', plot_urls=plot_urls,form=form,
+            return render_template('mixing_optool.html', plot_urls=plot_urls,form=form,
                                     values=data_array,mixture=mixture,plot_urlm=plot_mixture,
                                     filename=filename)
 

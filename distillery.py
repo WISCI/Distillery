@@ -1,6 +1,7 @@
 import numpy as np
 import json
 import io
+import os
 import scipy.interpolate as intp
 from scipy import integrate
 import copy
@@ -18,6 +19,8 @@ from astropy.io import ascii
 # Implement sanity checks on files (both info and lnk present in directory)
 # Implement sanity checks on database (is a species with same name already in there)
 # Implement calculation of optical constants/Qabs/dielectric functions from given values
+
+root_dir = '/Users/jonty/Documents/GitHub/Distillery/'
 
 def ReadData(species=None):
 #function to read in a formatted text file for a single species
@@ -321,8 +324,10 @@ def OpTool(commands):
     print("Distribution rule not known")
 
   #Execute optool command
-  composition = commands['direc']+commands['optc1'] +' '+str(commands['frac1'])+' '+str(commands['rho1'])+' '+commands['direc']+commands['optc2'] +' '+str(commands['frac2'])+' '+' '+str(commands['rho2'])+' '
-  
+  if commands['nspecies'] == 3: 
+    composition = commands['direc']+commands['optc1'] +' '+str(commands['frac1'])+' '+str(commands['rho1'])+' '+commands['direc']+commands['optc2'] +' '+str(commands['frac2'])+' '+' '+str(commands['rho2'])+' '+commands['direc']+commands['optc3'] +' '+str(commands['frac3'])+' '+' '+str(commands['rho3'])+' '
+  else: 
+    composition = commands['direc']+commands['optc1'] +' '+str(commands['frac1'])+' '+str(commands['rho1'])+' '+commands['direc']+commands['optc2'] +' '+str(commands['frac2'])+' '+' '+str(commands['rho2'])+' '
   print("optool "+composition+ meth_string+ dist_string+ wave_string)
 
   #os.system("optool "+composition+ meth_string+ dist_string+ wave_string)

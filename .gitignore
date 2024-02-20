@@ -161,3 +161,4 @@ cython_debug/
 
 # Mac Stuff
 .DS_Store
+dustkappa.dat
